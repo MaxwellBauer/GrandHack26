@@ -119,9 +119,11 @@ def main():
             print(f"  → FHIR refs saved to {refs_path}")
         except Exception as e:
             print(f"  ✗ FHIR push failed: {e}")
-            print("  Make sure the IRIS Docker container is running.")
-            print("  Try: docker run -d --name iris-fhir -p 1972:1972 -p 32783:52773 "
-                  "-e IRIS_PASSWORD=SYS intersystemsdc/irishealth-community:latest")
+            fhir_refs = {
+                "patient_id": patient_context["patient_id"],
+                "patient_ref": f"Patient/{patient_context['patient_id']}",
+                "report_ref": "DiagnosticReport/placeholder",
+            }
     else:
         print("\n━━━ Step 2: FHIR Server (skipped) ━━━")
         fhir_refs = {

@@ -213,7 +213,7 @@ class GaitVectorStore:
                 "recovery_stage": row[6],
                 "cadence": row[7],
                 "force_symmetry_pct": row[8],
-                "similarity": round(row[9], 4) if row[9] else 0,
+                "similarity": round(float(row[9]), 4) if row[9] else 0,
             })
 
         return results

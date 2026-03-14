@@ -390,8 +390,16 @@ def post_resource(resource: dict, fhir_base: str = FHIR_BASE_URL) -> dict:
     )
 
     if response.status_code in (200, 201):
-        result = response.json()
-        server_id = result.get("id", resource.get("id"))
+        # IRIS returns 201 with empty body — extract ID from Location header
+        if response.text.strip():
+            result = response.json()
+            server_id = result.get("id", resource.get("id"))
+        else:
+            location = response.headers.get("Location", "")
+            # Location: .../ResourceType/123/_history/1 → grab the ID segment
+            parts = [p for p in location.split("/") if p and p != "_history"]
+            server_id = parts[-1] if parts else resource.get("id", "unknown")
+            result = {"id": server_id, "resourceType": resource_type}
         print(f"  ✓ {resource_type}/{server_id} created")
         return result
     else:
