@@ -1,0 +1,5 @@
+anthropic>=0.40.0
+requests>=2.31.0
+sentence-transformers>=2.2.0
+# InterSystems IRIS DB-API driver — install from the hackathon kit's /install folder:
+# pip install ./install/intersystems_irispython-5.0.1-8026-*.whl

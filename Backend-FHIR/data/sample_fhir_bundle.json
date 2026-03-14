@@ -1,0 +1,364 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "e74d5fa4-68fd-47a3-b63d-5fb29b314821",
+        "identifier": [
+          {
+            "system": "http://smartinsole.example.com/patients",
+            "value": "SI-DEMO-001"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Smith",
+            "given": [
+              "Jane"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1967-03-15",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/patient-bodyWeight",
+            "valueQuantity": {
+              "value": 82,
+              "unit": "kg",
+              "system": "http://unitsofmeasure.org",
+              "code": "kg"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Device",
+        "id": "5250f6f6-b38f-4e19-a3b3-8b544228fcba",
+        "identifier": [
+          {
+            "system": "http://smartinsole.example.com/devices",
+            "value": "INSOLE-PROTO-001"
+          }
+        ],
+        "status": "active",
+        "manufacturer": "SmartInsole Hackathon Team",
+        "deviceName": [
+          {
+            "name": "Smart Pressure Insole v1",
+            "type": "user-friendly-name"
+          }
+        ],
+        "type": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "706767009",
+              "display": "Body worn patient sensor"
+            }
+          ],
+          "text": "Smart pressure-sensing insole with 14 force sensors"
+        },
+        "property": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://smartinsole.example.com/device-properties",
+                  "code": "sensor-count"
+                }
+              ],
+              "text": "Number of pressure sensors"
+            },
+            "valueQuantity": [
+              {
+                "value": 14
+              }
+            ]
+          },
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://smartinsole.example.com/device-properties",
+                  "code": "sampling-rate"
+                }
+              ],
+              "text": "Sampling rate"
+            },
+            "valueQuantity": [
+              {
+                "value": 100,
+                "unit": "Hz"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Device"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "9245b4db-52bb-4c2c-ba09-4751c3ca4b35",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "364674007",
+              "display": "Gait cadence"
+            }
+          ],
+          "text": "Gait cadence"
+        },
+        "subject": {
+          "reference": "Patient/e74d5fa4-68fd-47a3-b63d-5fb29b314821"
+        },
+        "device": {
+          "reference": "Device/5250f6f6-b38f-4e19-a3b3-8b544228fcba"
+        },
+        "effectiveDateTime": "2026-03-14T20:44:10.353773+00:00",
+        "valueQuantity": {
+          "value": 116.0,
+          "unit": "steps/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        },
+        "note": [
+          {
+            "text": "Measured over 30.0s recording"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "7b83e019-1b20-40d2-8b91-6519ab33d070",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://smartinsole.example.com/gait-metrics",
+              "code": "force-symmetry-index",
+              "display": "Force symmetry index"
+            }
+          ],
+          "text": "Force symmetry index"
+        },
+        "subject": {
+          "reference": "Patient/e74d5fa4-68fd-47a3-b63d-5fb29b314821"
+        },
+        "device": {
+          "reference": "Device/5250f6f6-b38f-4e19-a3b3-8b544228fcba"
+        },
+        "effectiveDateTime": "2026-03-14T20:44:10.353773+00:00",
+        "valueQuantity": {
+          "value": 32.1,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "HH"
+              }
+            ]
+          }
+        ],
+        "note": [
+          {
+            "text": "0% = perfect symmetry. >15% clinically significant."
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "71184b3b-0a6b-4142-a896-fab9112b39ec",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://smartinsole.example.com/gait-metrics",
+              "code": "timing-symmetry-index",
+              "display": "Stride timing symmetry index"
+            }
+          ],
+          "text": "Stride timing symmetry index"
+        },
+        "subject": {
+          "reference": "Patient/e74d5fa4-68fd-47a3-b63d-5fb29b314821"
+        },
+        "device": {
+          "reference": "Device/5250f6f6-b38f-4e19-a3b3-8b544228fcba"
+        },
+        "effectiveDateTime": "2026-03-14T20:44:10.353773+00:00",
+        "valueQuantity": {
+          "value": 0.0,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "fd5a4630-fea0-4bc2-a84c-68d203fd0cb1",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "PHY",
+                "display": "Physical"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://smartinsole.example.com/report-types",
+              "code": "gait-analysis",
+              "display": "Smart Insole Gait Analysis"
+            }
+          ],
+          "text": "Smart Insole Gait Analysis Report"
+        },
+        "subject": {
+          "reference": "Patient/e74d5fa4-68fd-47a3-b63d-5fb29b314821"
+        },
+        "effectiveDateTime": "2026-03-14T20:44:10.354001+00:00",
+        "issued": "2026-03-14T20:44:10.354004+00:00",
+        "result": [
+          {
+            "reference": "Observation/9245b4db-52bb-4c2c-ba09-4751c3ca4b35"
+          },
+          {
+            "reference": "Observation/7b83e019-1b20-40d2-8b91-6519ab33d070"
+          },
+          {
+            "reference": "Observation/71184b3b-0a6b-4142-a896-fab9112b39ec"
+          },
+          {
+            "reference": "Observation/278da706-7725-4d6c-90e1-1ef1deaf01bd"
+          },
+          {
+            "reference": "Observation/da76f387-a499-41e5-8f8c-66d3b88d1344"
+          },
+          {
+            "reference": "Observation/cea8c914-ab34-44d5-947e-2c9379dd9efd"
+          },
+          {
+            "reference": "Observation/df05b917-502e-4f4b-bb8b-0cf58e0bb6db"
+          },
+          {
+            "reference": "Observation/6f949821-398c-4a9c-a1b9-8239be448c6a"
+          },
+          {
+            "reference": "Observation/7f32ea89-3c1e-4c06-b5f2-b16a4cb3cea6"
+          },
+          {
+            "reference": "Observation/6ee24f45-c4d1-401e-a40d-111d64aae4a7"
+          },
+          {
+            "reference": "Observation/4f1c8e59-a691-4e1b-8660-0b4f4943f7a9"
+          },
+          {
+            "reference": "Observation/d766c5a8-b7c1-4e59-b71d-5ddcd0fc6245"
+          },
+          {
+            "reference": "Observation/6dfa06e0-1ed2-4a12-a5e5-5a1c697eed6c"
+          },
+          {
+            "reference": "Observation/e1d1f5a9-9cbc-4991-b3a3-1536aa6514b9"
+          }
+        ],
+        "conclusion": "Patient demonstrates significant force asymmetry (SI=32.1%) with the left foot bearing substantially more load (avg 361N) compared to the right (avg 261N), consistent with right-leg protective weight bearing. Cadence is within normal range at 116 steps/min with very low stride-to-stride variability (CV<0.01), suggesting a compensated but stable gait pattern.",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><h3>Smart Insole Gait Analysis Report</h3>\n<p><strong>Summary:</strong> Patient demonstrates significant force asymmetry (SI=32.1%) with the left foot bearing substantially more load (avg 361N) compared to the right (avg 261N), consistent with right-leg protective weight bearing. Cadence is within normal range at 116 steps/min with very low stride-to-stride variability (CV<0.01), suggesting a compensated but stable gait pattern.</p>\n<p><strong>Weight Bearing:</strong> partial \u2014 Right foot peak force ~261N represents ~32% body weight (82kg). If toe-touch WB prescribed (max 20% BW = 160N), patient is exceeding the restriction by approximately 60%.</p>\n<p><strong>Symmetry:</strong> moderately_asymmetric \u2014 Pattern consistent with antalgic gait \u2014 patient maintains normal stride timing but offloads the surgical limb. The force differential suggests either pain-mediated guarding or insufficient confidence in the repair.</p>\n<p><strong>Gait Quality:</strong> Cadence normal, Variability normal</p>\n<p><strong>Risk Flags:</strong></p><ul>\n<li>Weight bearing exceeds prescribed toe-touch limit on right foot</li>\n<li>Force asymmetry >30% \u2014 risk of contralateral overloading injuries (hip, knee, lower back)</li>\n<li>Left stance phase prolonged (79.7% vs 74.6%) indicating compensatory loading</li>\n</ul>\n<p><strong>Recommendations:</strong></p><ul>\n<li>Review weight-bearing restriction compliance \u2014 patient exceeding 20% BW limit</li>\n<li>Assess for pain at surgical site that may be driving protective unloading</li>\n<li>Monitor left hip and knee for early signs of compensatory overload</li>\n<li>Consider active feedback insole alerts when right foot exceeds 160N threshold</li>\n<li>Schedule follow-up gait assessment in 5-7 days to track progression</li>\n</ul></div>"
+        },
+        "extension": [
+          {
+            "url": "http://smartinsole.example.com/extensions/follow-up-priority",
+            "valueCode": "soon"
+          },
+          {
+            "url": "http://smartinsole.example.com/extensions/recovery-stage",
+            "valueCode": "early"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DiagnosticReport"
+      }
+    }
+  ]
+}

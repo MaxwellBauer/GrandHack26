@@ -1,0 +1,29 @@
+version: '3.8'
+
+# Smart Insole FHIR + Vector Search Stack
+# Uses InterSystems IRIS for Health (Community Edition)
+# with built-in FHIR R4 server and vector search
+
+services:
+  iris:
+    image: intersystemsdc/irishealth-community:latest
+    container_name: smart-insole-iris
+    ports:
+      - "1972:1972"     # IRIS SuperServer (DB-API driver connects here)
+      - "32783:52773"   # Web/FHIR endpoint
+    environment:
+      - IRIS_PASSWORD=SYS
+      - IRIS_USERNAME=_SYSTEM
+    volumes:
+      - iris-data:/durable
+      - ./data:/opt/app/data
+    # Health check for FHIR endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:52773/fhir/r4/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  iris-data:

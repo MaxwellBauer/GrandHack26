@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.env
+.DS_Store
+
+# IRIS driver wheel (install locally from hackathon kit)
+install/
+
+# Generated outputs (keep samples, ignore new runs)
+data/gait_analysis_results_fhir_refs.json
+
+# The original tarball (source is now extracted)
+smart-insole-fhir.tar.gz
