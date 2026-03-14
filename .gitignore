@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.pyc
+.DS_Store
+
+# Generated data (regenerated on first run)
+data/gait_data.csv
+
+# Leftover files from earlier experiments
+data/gait_avatar.gif
+data/stickfigure.png
+avatar_viz.py
