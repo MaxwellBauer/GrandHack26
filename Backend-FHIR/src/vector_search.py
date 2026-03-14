@@ -62,8 +62,8 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
 class GaitVectorStore:
     """Manages gait analysis embeddings in InterSystems IRIS."""
 
-    def __init__(self, host="localhost", port=1972,
-                 namespace="USER", username="demo", password="demo"):
+    def __init__(self, host="localhost", port=32782,
+                 namespace="DEMO", username="_SYSTEM", password="ISCDEMO"):
         """Connect to IRIS using the DB-API driver."""
         import iris
         self.conn = iris.connect(host, port, namespace, username, password)
@@ -88,7 +88,7 @@ class GaitVectorStore:
                 force_symmetry_pct FLOAT,
                 max_force_left FLOAT,
                 max_force_right FLOAT,
-                narrative_vector VECTOR(FLOAT, %d)
+                narrative_vector VECTOR(DOUBLE, %d)
             )
         """ % EMBEDDING_DIM)
 
@@ -152,8 +152,8 @@ class GaitVectorStore:
                 cadence, force_symmetry_pct, max_force_left, max_force_right,
                 narrative_vector
             ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                      TO_VECTOR(?, FLOAT, %d))
-        """ % EMBEDDING_DIM, [
+                      TO_VECTOR(?,double))
+        """, [
             fhir_refs.get("patient_id", "unknown"),
             fhir_refs.get("patient_ref", ""),
             fhir_refs.get("report_ref", ""),
@@ -196,10 +196,10 @@ class GaitVectorStore:
                 recovery_stage,
                 cadence,
                 force_symmetry_pct,
-                VECTOR_COSINE(narrative_vector, TO_VECTOR(?, FLOAT, %d)) AS similarity
+                VECTOR_COSINE(narrative_vector, TO_VECTOR(?,double)) AS similarity
             FROM SQLUser.GaitAnalysis
             ORDER BY similarity DESC
-        """ % (top_k, EMBEDDING_DIM), [vector_str])
+        """ % top_k, [vector_str])
 
         results = []
         for row in self.cursor.fetchall():

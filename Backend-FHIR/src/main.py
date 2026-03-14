@@ -16,6 +16,13 @@ import os
 import sys
 import argparse
 
+# Load .env file if present (keeps API keys out of shell history and chat)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+except ImportError:
+    pass
+
 from gait_analysis import analyze_gait_data
 from fhir_builder import push_gait_analysis_to_fhir, FHIR_BASE_URL
 from vector_search import GaitVectorStore
@@ -129,10 +136,10 @@ def main():
         try:
             store = GaitVectorStore(
                 host=os.environ.get("IRIS_HOST", "localhost"),
-                port=int(os.environ.get("IRIS_PORT", "1972")),
-                namespace=os.environ.get("IRIS_NAMESPACE", "USER"),
-                username=os.environ.get("IRIS_USER", "demo"),
-                password=os.environ.get("IRIS_PASSWORD", "demo"),
+                port=int(os.environ.get("IRIS_PORT", "32782")),
+                namespace=os.environ.get("IRIS_NAMESPACE", "DEMO"),
+                username=os.environ.get("IRIS_USER", "_SYSTEM"),
+                password=os.environ.get("IRIS_PASSWORD", "ISCDEMO"),
             )
             store.store_analysis(analysis, fhir_refs)
 

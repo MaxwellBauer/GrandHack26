@@ -20,8 +20,8 @@ from typing import Optional
 # ── FHIR Server Config ────────────────────────────────────────────
 # Default InterSystems IRIS FHIR endpoint from the hackathon kit
 # Update these to match your Docker container's exposed ports
-FHIR_BASE_URL = "http://localhost:32783/fhir/r4"
-FHIR_AUTH = ("_SYSTEM", "SYS")  # Default IRIS credentials
+FHIR_BASE_URL = "http://localhost:32783/csp/healthshare/demo/fhir/r4"
+FHIR_AUTH = ("_SYSTEM", "ISCDEMO")  # Hackathon kit credentials
 
 
 def generate_id() -> str:
