@@ -14,7 +14,7 @@ import sys
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
-# Make src/ importable so we can use vector_search, gait_analysis, etc.
+# Make src/ importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from dotenv import load_dotenv
@@ -24,11 +24,13 @@ import requests as http_requests
 
 app = Flask(__name__)
 
-BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR     = os.path.join(BASE_DIR, "data")
-RESULTS_PATH = os.path.join(DATA_DIR, "gait_analysis_results.json")
-REFS_PATH    = os.path.join(DATA_DIR, "gait_analysis_results_fhir_refs.json")
-VIZ_DIR      = os.path.join(BASE_DIR, "..", "data")   # Part 1 PNG outputs
+BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR      = os.path.join(BASE_DIR, "data")
+RESULTS_PATH  = os.path.join(DATA_DIR, "gait_analysis_results.json")
+REFS_PATH     = os.path.join(DATA_DIR, "gait_analysis_results_fhir_refs.json")
+ANALYSIS_DIR  = os.path.join(BASE_DIR, "..", "Analysis")
+VIZ_DIR       = os.path.join(ANALYSIS_DIR, "data")   # where PNGs live
+DATA_CSV      = os.path.join(DATA_DIR, "gait_data.csv")
 
 FHIR_BASE = os.environ.get(
     "IRIS_FHIR_URL",
@@ -47,7 +49,39 @@ IRIS_CONFIG = {
 }
 
 
-# ── Routes ──────────────────────────────────────────────────────────────────
+# ── Visualization auto-generation ────────────────────────────────────────────
+
+def ensure_visualizations():
+    """Generate heatmap and gait-analysis PNGs if they don't already exist."""
+    heatmap_path = os.path.join(VIZ_DIR, "heatmap.png")
+    gait_path    = os.path.join(VIZ_DIR, "gait_analysis.png")
+
+    if os.path.exists(heatmap_path) and os.path.exists(gait_path):
+        return  # already generated
+
+    if not os.path.exists(DATA_CSV):
+        print("  ⚠ No gait_data.csv found — skipping visualization generation")
+        return
+
+    print("  Generating visualizations (first run)…")
+    sys.path.insert(0, ANALYSIS_DIR)
+    try:
+        import matplotlib
+        matplotlib.use("Agg")   # non-interactive backend, safe for server use
+        os.makedirs(VIZ_DIR, exist_ok=True)
+
+        from heatmap_viz import render as render_heatmap
+        render_heatmap(DATA_CSV, heatmap_path)
+
+        from gait_viz import render as render_gait
+        render_gait(DATA_CSV, gait_path)
+
+        print(f"  ✓ heatmap.png and gait_analysis.png saved to {VIZ_DIR}")
+    except Exception as e:
+        print(f"  ⚠ Visualization generation failed: {e}")
+
+
+# ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def index():
@@ -97,6 +131,34 @@ def api_fhir_report(report_id):
         return jsonify({"error": str(e)}), 503
 
 
+@app.route("/api/patients")
+def api_patients():
+    """Return all patients stored in the IRIS vector table."""
+    try:
+        from vector_search import GaitVectorStore
+        store = GaitVectorStore(**IRIS_CONFIG)
+        patients = store.get_all_patients()
+        store.close()
+        return jsonify({"patients": patients})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+
+@app.route("/api/patient/<patient_id>")
+def api_patient(patient_id):
+    """Return the most recent analysis for a specific patient ID."""
+    try:
+        from vector_search import GaitVectorStore
+        store = GaitVectorStore(**IRIS_CONFIG)
+        data = store.get_patient_analysis(patient_id)
+        store.close()
+        if not data:
+            return jsonify({"error": "Patient not found"}), 404
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+
 @app.route("/api/search", methods=["POST"])
 def api_search():
     """Run semantic vector search against IRIS."""
@@ -115,7 +177,7 @@ def api_search():
 
 @app.route("/images/<path:filename>")
 def serve_image(filename):
-    """Serve Part 1 visualization PNGs from the parent project's data/ dir."""
+    """Serve visualization PNGs."""
     return send_from_directory(VIZ_DIR, filename)
 
 
@@ -124,4 +186,5 @@ if __name__ == "__main__":
     print("  Smart Insole Gait Intelligence Dashboard")
     print("  http://localhost:5050")
     print("=" * 55)
+    ensure_visualizations()
     app.run(host="0.0.0.0", port=5050, debug=False)

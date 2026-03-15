@@ -500,7 +500,7 @@ def push_gait_analysis_to_fhir(analysis_results: dict,
         "device_ref": device_ref,
         "observation_refs": obs_refs,
         "report_ref": f"DiagnosticReport/{report_id}" if report_id else None,
-        "patient_id": patient_id,
+        "patient_id": patient_context.get("patient_id", patient_id),
     }
 
 

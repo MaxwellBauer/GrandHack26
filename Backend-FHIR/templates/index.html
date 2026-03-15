@@ -112,6 +112,30 @@
   .result-summary { font-size: 12px; color: var(--muted); line-height: 1.5; }
   .search-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 20px 0; }
   .search-error { color: var(--danger); font-size: 12px; padding: 10px 0; }
+
+  /* Patient Browser */
+  .pt-filter { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 6px 11px; color: var(--text); font-size: 12px; outline: none; width: 100%; margin-bottom: 10px; transition: border-color 0.2s; }
+  .pt-filter:focus { border-color: var(--left); }
+  .pt-browser-scroll { max-height: 340px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .pt-browser-scroll::-webkit-scrollbar { width: 4px; }
+  .pt-browser-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .patient-table { width: 100%; border-collapse: collapse; }
+  .patient-table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left; position: sticky; top: 0; background: var(--card); }
+  .patient-table td { padding: 7px 8px; font-size: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .pt-row { cursor: pointer; transition: background 0.15s; }
+  .pt-row:hover { background: rgba(255,255,255,0.03); }
+  .pt-row.selected { background: rgba(79,195,247,0.07); }
+  .patient-table tr:last-child td { border-bottom: none; }
+  .pt-id { font-family: "SF Mono","Fira Code",monospace; font-size: 11px; color: var(--left); white-space: nowrap; }
+  .pt-condition { color: var(--muted); font-size: 11px; line-height: 1.4; }
+  .pt-detail-row { display: none; }
+  .pt-detail-row.open { display: table-row; }
+  .pt-detail-row td { background: #0a0f14; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .pt-detail-text { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .pt-detail-meta { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; }
+  .pt-detail-meta span { font-size: 10px; color: var(--muted); }
+  .pt-detail-meta span b { color: var(--text); }
+  .pt-count { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -225,7 +249,7 @@
            onerror="this.style.display='none';document.getElementById('heatmap-ph').style.display='flex'">
       <div id="heatmap-ph" class="img-placeholder" style="display:none">
         <span style="font-size:28px">🦶</span>
-        <span>Run <code style="color:var(--left)">python run_demo.py</code> in GrandHack26/ to generate</span>
+        <span style="color:var(--muted)">Generating on first run…</span>
       </div>
       <div class="img-caption">30-second time average · RBF interpolation · turbo colormap</div>
     </div>
@@ -236,37 +260,42 @@
            onerror="this.style.display='none';document.getElementById('gait-ph').style.display='flex'">
       <div id="gait-ph" class="img-placeholder" style="display:none">
         <span style="font-size:28px">📈</span>
-        <span>Run <code style="color:var(--left)">python run_demo.py</code> in GrandHack26/ to generate</span>
+        <span style="color:var(--muted)">Generating on first run…</span>
       </div>
       <div class="img-caption">Force traces · step intervals · stance symmetry · limp detection</div>
     </div>
 
   </div>
 
-  <!-- ROW 3: FHIR | Vector Search -->
+  <!-- ROW 3: Patient Browser | Vector Search -->
   <div class="grid-2">
 
     <div class="card">
-      <div class="card-title">FHIR R4 Resources — InterSystems IRIS</div>
-      <div id="fhir-loading">
-        <div class="skel-line skeleton" style="width:70%"></div>
-        <div class="skel-line skeleton" style="width:55%"></div>
-        <div class="skel-line skeleton" style="width:65%"></div>
-        <div class="skel-line skeleton" style="width:60%"></div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Patient Browser — IRIS Vector Store</span>
+        <a class="fhir-link" href="http://localhost:32783/csp/healthshare/demo/fhir/r4/Patient" target="_blank" style="font-size:10px;font-weight:400">FHIR Server →</a>
       </div>
-      <div id="fhir-content" style="display:none">
-        <table class="fhir-table">
-          <tr><td>Patient</td><td><span class="check">✓</span><span id="fhir-patient">—</span></td></tr>
-          <tr><td>Device</td><td><span class="check">✓</span><span id="fhir-device">—</span></td></tr>
-          <tr><td>Observations</td><td><span class="check">✓</span>14 gait metrics stored</td></tr>
-          <tr><td>DiagnosticReport</td><td><span class="check">✓</span><span id="fhir-report">—</span></td></tr>
-        </table>
-        <div style="margin-bottom:12px;display:flex;gap:16px;">
-          <a class="fhir-link" href="http://localhost:32783/csp/healthshare/demo/fhir/r4/Patient" target="_blank">Browse FHIR Server →</a>
-          <a class="fhir-link" href="http://localhost:32783/fhir/portal/patientlist.html" target="_blank">Patient Portal →</a>
+      <input class="pt-filter" id="pt-filter" type="text" placeholder="Filter by ID, condition, or priority…">
+      <div id="pt-count" class="pt-count"></div>
+      <div class="pt-browser-scroll">
+        <div id="pt-loading">
+          <div class="skel-line skeleton" style="width:80%"></div>
+          <div class="skel-line skeleton" style="width:65%"></div>
+          <div class="skel-line skeleton" style="width:75%"></div>
+          <div class="skel-line skeleton" style="width:70%"></div>
+          <div class="skel-line skeleton" style="width:80%"></div>
         </div>
-        <div class="section-label">DiagnosticReport — Clinical Conclusion</div>
-        <div class="json-preview" id="fhir-conclusion">Loading…</div>
+        <table class="patient-table" id="pt-table" style="display:none">
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Clinical Summary</th>
+              <th>Force SI</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody id="pt-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -278,10 +307,12 @@
         <button class="btn" id="search-btn" onclick="runSearch()">Search</button>
       </div>
       <div class="chips">
-        <span class="chip" onclick="quickSearch('asymmetric gait pattern')">asymmetric gait</span>
-        <span class="chip" onclick="quickSearch('weight bearing exceeded surgical limb')">weight bearing exceeded</span>
-        <span class="chip" onclick="quickSearch('urgent follow-up needed')">urgent follow-up</span>
-        <span class="chip" onclick="quickSearch('normal symmetric recovery good progress')">normal recovery</span>
+        <span class="chip" onclick="quickSearch('asymmetric gait antalgic offloading')">asymmetric gait</span>
+        <span class="chip" onclick="quickSearch('weight bearing restriction exceeded non-compliant')">WB non-compliant</span>
+        <span class="chip" onclick="quickSearch('urgent follow-up fracture fixation risk')">urgent follow-up</span>
+        <span class="chip" onclick="quickSearch('near normal recovery symmetric late stage')">normal recovery</span>
+        <span class="chip" onclick="quickSearch('elderly slow cadence joint replacement')">elderly joint replacement</span>
+        <span class="chip" onclick="quickSearch('ankle foot forefoot avoidance toe-off')">ankle / foot injury</span>
       </div>
       <div id="search-results" class="search-results">
         <div class="search-empty">Enter a query to search across stored patient analyses</div>
@@ -295,9 +326,11 @@
 window.addEventListener('DOMContentLoaded', () => {
   checkIRIS();
   loadResults();
+  loadPatients();
   document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') runSearch();
   });
+  document.getElementById('pt-filter').addEventListener('input', filterPatients);
 });
 
 async function checkIRIS() {
@@ -320,13 +353,12 @@ async function loadResults() {
     const r = await fetch('/api/results');
     const data = await r.json();
     if (!data.analysis) {
-      ['metrics-loading','ai-loading','fhir-loading'].forEach(id => document.getElementById(id).style.display='none');
+      ['metrics-loading','ai-loading'].forEach(id => document.getElementById(id).style.display='none');
       document.getElementById('ai-empty').style.display = 'block';
       return;
     }
     renderMetrics(data.analysis.raw_metrics);
     renderAI(data.analysis.clinical_interpretation);
-    renderFHIR(data.fhir_refs || {});
   } catch(e) { console.error(e); }
 }
 
@@ -409,6 +441,89 @@ function renderFHIR(refs) {
   }
 }
 
+// ── Patient Browser ──────────────────────────────────────────────────────────
+
+let allPatients = [];
+
+async function loadPatients() {
+  try {
+    const r = await fetch('/api/patients');
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    allPatients = data.patients || [];
+    renderPatientTable(allPatients);
+  } catch(e) {
+    document.getElementById('pt-loading').innerHTML =
+      `<div class="search-error">Could not load patients: ${e.message}</div>`;
+  }
+}
+
+function filterPatients() {
+  const q = document.getElementById('pt-filter').value.toLowerCase();
+  if (!q) { renderPatientTable(allPatients); return; }
+  const filtered = allPatients.filter(p =>
+    (p.patient_id||'').toLowerCase().includes(q) ||
+    (p.clinical_summary||'').toLowerCase().includes(q) ||
+    (p.symmetry_status||'').toLowerCase().includes(q) ||
+    (p.follow_up_priority||'').toLowerCase().includes(q) ||
+    (p.recovery_stage||'').toLowerCase().includes(q)
+  );
+  renderPatientTable(filtered);
+}
+
+function renderPatientTable(patients) {
+  document.getElementById('pt-loading').style.display = 'none';
+  const table = document.getElementById('pt-table');
+  const tbody = document.getElementById('pt-tbody');
+  const count  = document.getElementById('pt-count');
+  table.style.display = 'table';
+  tbody.innerHTML = '';
+  count.textContent = `${patients.length} patient${patients.length!==1?'s':''} in IRIS`;
+
+  if (!patients.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="search-empty">No patients match</td></tr>';
+    return;
+  }
+
+  patients.forEach(p => {
+    const si  = parseFloat(p.force_symmetry_pct || 0);
+    const siColor = si >= 30 ? 'var(--danger)' : si >= 15 ? 'var(--warn)' : 'var(--ok)';
+    const pc  = {urgent:'badge-danger', soon:'badge-warn', routine:'badge-ok'}[p.follow_up_priority] || 'badge-ok';
+    const summary = (p.clinical_summary || '').slice(0, 72) + ((p.clinical_summary||'').length > 72 ? '…' : '');
+
+    const row = document.createElement('tr');
+    row.className = 'pt-row';
+    row.innerHTML = `
+      <td><span class="pt-id">${p.patient_id}</span></td>
+      <td><div class="pt-condition">${summary}</div></td>
+      <td style="color:${siColor};font-weight:600;white-space:nowrap">${si.toFixed(1)}%</td>
+      <td><span class="badge ${pc}" style="white-space:nowrap">${(p.follow_up_priority||'').toUpperCase()}</span></td>`;
+
+    const detailRow = document.createElement('tr');
+    detailRow.className = 'pt-detail-row';
+    detailRow.innerHTML = `<td colspan="4">
+      <div class="pt-detail-text">${p.clinical_summary || ''}</div>
+      <div class="pt-detail-meta">
+        <span><b>Cadence</b> ${parseFloat(p.cadence||0).toFixed(0)} steps/min</span>
+        <span><b>Force SI</b> ${si.toFixed(1)}%</span>
+        <span><b>Symmetry</b> ${p.symmetry_status || '—'}</span>
+        <span><b>Recovery</b> ${p.recovery_stage || '—'}</span>
+        <span><b>FHIR</b> <a class="fhir-link" href="http://localhost:32783/csp/healthshare/demo/fhir/r4/Patient" target="_blank">${p.fhir_patient_ref || '—'}</a></span>
+      </div>
+    </td>`;
+
+    row.addEventListener('click', () => {
+      const isOpen = detailRow.classList.contains('open');
+      document.querySelectorAll('.pt-row.selected').forEach(r => r.classList.remove('selected'));
+      document.querySelectorAll('.pt-detail-row.open').forEach(r => r.classList.remove('open'));
+      if (!isOpen) { row.classList.add('selected'); detailRow.classList.add('open'); }
+    });
+
+    tbody.appendChild(row);
+    tbody.appendChild(detailRow);
+  });
+}
+
 function quickSearch(q) {
   document.getElementById('search-input').value = q;
   runSearch();
@@ -442,7 +557,7 @@ async function runSearch() {
       card.className = 'result-card';
       card.innerHTML = `
         <div class="result-header">
-          <span class="result-patient">Patient ${res.patient_id}</span>
+          <span class="result-patient">${res.patient_id}</span>
           <div class="sim-bar-wrap">
             <div class="sim-bar-track"><div class="sim-bar-fill" style="width:${pct}%;background:${col}"></div></div>
             <span class="sim-val">${pct}%</span>

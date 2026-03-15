@@ -456,6 +456,12 @@ def run_patient(patient_context: dict, csv_kwargs: dict, store: GaitVectorStore)
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true",
+                        help="Clear existing vector store records before seeding")
+    args = parser.parse_args()
+
     print("╔══════════════════════════════════════════════════════╗")
     print("║  Smart Insole — Patient Database Seeder              ║")
     print(f"║  Adding {len(PATIENTS)} patients to IRIS vector store          ║")
@@ -469,6 +475,10 @@ def main():
         print(f"  ✗ Cannot connect to IRIS: {e}")
         print("  Make sure IRIS is running: docker-compose up -d")
         sys.exit(1)
+
+    if args.reset:
+        print("\nResetting vector store…")
+        store.clear_all()
 
     success = 0
     for patient_context, csv_kwargs in PATIENTS:

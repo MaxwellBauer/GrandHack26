@@ -240,6 +240,76 @@ class GaitVectorStore:
             "recording_date": str(row[8]) if row[8] else None,
         } for row in self.cursor.fetchall()]
 
+    def get_all_patients(self) -> list[dict]:
+        """Return one record per patient (most recent if multiple sessions)."""
+        self.cursor.execute("""
+            SELECT patient_id, fhir_patient_ref, fhir_report_ref,
+                   clinical_summary, symmetry_status, follow_up_priority,
+                   recovery_stage, cadence, force_symmetry_pct,
+                   max_force_left, max_force_right, recording_date
+            FROM SQLUser.GaitAnalysis
+            ORDER BY recording_date DESC
+        """)
+        seen = set()
+        rows = []
+        for row in self.cursor.fetchall():
+            pid = row[0]
+            if pid in seen:
+                continue
+            seen.add(pid)
+            rows.append({
+                "patient_id": pid,
+                "fhir_patient_ref": row[1],
+                "fhir_report_ref": row[2],
+                "clinical_summary": row[3],
+                "symmetry_status": row[4],
+                "follow_up_priority": row[5],
+                "recovery_stage": row[6],
+                "cadence": row[7],
+                "force_symmetry_pct": row[8],
+                "max_force_left": row[9],
+                "max_force_right": row[10],
+                "recording_date": str(row[11]) if row[11] else None,
+            })
+        return rows
+
+    def get_patient_analysis(self, patient_id: str) -> dict:
+        """Return the most recent analysis for a specific patient ID."""
+        self.cursor.execute("""
+            SELECT patient_id, fhir_patient_ref, fhir_report_ref,
+                   clinical_summary, full_narrative, symmetry_status,
+                   follow_up_priority, recovery_stage, cadence,
+                   force_symmetry_pct, max_force_left, max_force_right,
+                   recording_date
+            FROM SQLUser.GaitAnalysis
+            WHERE patient_id = ?
+            ORDER BY recording_date DESC
+        """, [patient_id])
+        row = self.cursor.fetchone()
+        if not row:
+            return {}
+        return {
+            "patient_id": row[0],
+            "fhir_patient_ref": row[1],
+            "fhir_report_ref": row[2],
+            "clinical_summary": row[3],
+            "full_narrative": row[4],
+            "symmetry_status": row[5],
+            "follow_up_priority": row[6],
+            "recovery_stage": row[7],
+            "cadence": row[8],
+            "force_symmetry_pct": row[9],
+            "max_force_left": row[10],
+            "max_force_right": row[11],
+            "recording_date": str(row[12]) if row[12] else None,
+        }
+
+    def clear_all(self):
+        """Delete all rows from the gait analysis table (for re-seeding)."""
+        self.cursor.execute("DELETE FROM SQLUser.GaitAnalysis")
+        self.conn.commit()
+        print("  ✓ Cleared all records from SQLUser.GaitAnalysis")
+
     def close(self):
         self.cursor.close()
         self.conn.close()
