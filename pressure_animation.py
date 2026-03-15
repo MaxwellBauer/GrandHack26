@@ -189,7 +189,8 @@ def build_pressure_frames(sensor_data, bases, smooth=3):
 # ── Animation ─────────────────────────────────────────────────────────────────
 
 def make_animation(sensor_data, timestamps, pressures,
-                   outline, gx, gy, mask, vmax, fps, output_path):
+                   outline, gx, gy, mask, vmax, fps, output_path,
+                   peak_total, low_pct=15.0, high_pct=75.0):
 
     n_frames = len(pressures)
     sensor_pts = np.array([SENSOR_POS[k] for k in SENSOR_KEYS])
@@ -234,11 +235,11 @@ def make_animation(sensor_data, timestamps, pressures,
     ax_foot.set_aspect('equal')
     ax_foot.axis('off')
 
-    # ── Colorbar ───────────────────────────────────────────────────────────
+    # ── Colorbar (inset so foot stays centered) ────────────────────────────
     sm = ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax_foot, orientation='vertical',
-                        fraction=0.03, pad=0.02, shrink=0.75)
+    cbar_ax = ax_foot.inset_axes([1.03, 0.12, 0.04, 0.76])
+    cbar = fig.colorbar(sm, cax=cbar_ax, orientation='vertical')
     cbar.set_label('Pressure (g)', color='white', fontsize=9, labelpad=6)
     cbar.ax.yaxis.set_tick_params(color='white', labelcolor='white', labelsize=8)
     cbar.outline.set_edgecolor('#444')
@@ -253,18 +254,40 @@ def make_animation(sensor_data, timestamps, pressures,
                              ha='center', va='center', fontsize=9,
                              color='#8b949e', transform=ax_title.transAxes)
 
-    # ── Total-force bar ────────────────────────────────────────────────────
+    # ── Total-force bar (% of global peak, with tolerance zones) ──────────
+    ax_bar.set_facecolor(BG)
+    ax_bar.set_xlim(0, 100)
+    ax_bar.set_ylim(-0.8, 1.6)
     ax_bar.axis('off')
-    total_forces = sensor_data.sum(axis=1)
-    max_total = max(total_forces.max(), 1.0)
 
-    bar_bg = ax_bar.barh([0], [1], color='#21262d', height=0.6, left=0)
-    bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.6, left=0)
-    ax_bar.set_xlim(0, 1)
-    ax_bar.set_ylim(-0.5, 0.5)
-    bar_label = ax_bar.text(0.5, -0.42, 'Total: 0 g',
-                            ha='center', va='center', fontsize=8,
-                            color='#8b949e', transform=ax_bar.transAxes)
+    LOW, HIGH = low_pct, high_pct   # tolerance thresholds in %
+
+    # Background track
+    ax_bar.barh([0], [100], color='#21262d', height=0.7, left=0, zorder=1)
+
+    # Tolerance zone shading (green band between LOW and HIGH)
+    ax_bar.barh([0], [HIGH - LOW], color='#1a3a1a', height=0.7,
+                left=LOW, zorder=2, alpha=0.6)
+
+    # Fixed tolerance lines + offset labels so they don't overlap the line
+    ax_bar.axvline(LOW,  color='#4fc3f7', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
+    ax_bar.axvline(HIGH, color='#ff6b6b', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
+    ax_bar.text(LOW  + 1.5, 0.42, f'MIN {LOW:.0f}%',  ha='left',  va='bottom', fontsize=7,
+                color='#4fc3f7', fontweight='bold')
+    ax_bar.text(HIGH + 1.5, 0.42, f'MAX {HIGH:.0f}%', ha='left',  va='bottom', fontsize=7,
+                color='#ff6b6b', fontweight='bold')
+
+    # Label axes
+    ax_bar.text(0,   -0.55, '0%',   ha='left',   va='top', fontsize=7, color='#555')
+    ax_bar.text(100, -0.55, '100%', ha='right',  va='top', fontsize=7, color='#555')
+    ax_bar.text(50,  -0.55, '% Body Weight', ha='center', va='top',
+                fontsize=7.5, color='#8b949e')
+
+    # Dynamic bar (starts at 0)
+    bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.7, left=0, zorder=3)
+    bar_label = ax_bar.text(50, 1.1, '0%',
+                            ha='center', va='center', fontsize=9,
+                            fontweight='bold', color='white')
 
     # ── Initial heatmap (RGBA imshow — reliable for animation) ────────────
     # Build extent to match the gx/gy meshgrid
@@ -316,9 +339,18 @@ def make_animation(sensor_data, timestamps, pressures,
         t_sec = t_ms / 1000.0
         time_txt.set_text(f't = {t_sec:.2f} s  |  frame {frame_idx+1}/{n_frames}')
 
-        # Total force bar
-        bar_fill[0].set_width(min(total / max_total, 1.0))
-        bar_label.set_text(f'Total force: {total:.0f} g')
+        # Total force bar — percentage of global peak, color-coded
+        pct = min(total / peak_total * 100, 100.0)
+        if pct < LOW:
+            color = '#4fc3f7'   # blue  — below lower tolerance
+        elif pct <= HIGH:
+            color = '#4caf50'   # green — within normal range
+        else:
+            color = '#f44336'   # red   — exceeds upper tolerance
+        bar_fill[0].set_width(pct)
+        bar_fill[0].set_facecolor(color)
+        bar_label.set_text(f'{pct:.0f}%')
+        bar_label.set_color(color)
 
         return [im, time_txt, bar_label, bar_fill[0]] + val_artists
 
@@ -370,10 +402,14 @@ def main():
                         help="Heatmap grid resolution (default 220)")
     parser.add_argument("--vmax",   type=float, default=None,
                         help="Colormap max pressure in grams (default: auto from data)")
-    parser.add_argument("--start",  type=float, default=None,
-                        help="Start time in seconds (default: beginning)")
-    parser.add_argument("--end",    type=float, default=None,
-                        help="End time in seconds (default: end of file)")
+    parser.add_argument("--start",  type=float, default=41.5,
+                        help="Start time in seconds (default: 41.5 — walking section)")
+    parser.add_argument("--end",    type=float, default=56.5,
+                        help="End time in seconds (default: 56.5 — walking section)")
+    parser.add_argument("--low",    type=float, default=15.0,
+                        help="Lower tolerance threshold as %% of peak (default: 15)")
+    parser.add_argument("--high",   type=float, default=75.0,
+                        help="Upper tolerance threshold as %% of peak (default: 75)")
     args = parser.parse_args()
 
     csv_path    = args.csv
@@ -385,23 +421,23 @@ def main():
     print(f"  Output: {output_path}")
     print(f"{'═'*54}\n")
 
-    # Load data
+    # Load data (full CSV first — need global peak for % normalization)
     print("Loading CSV…")
-    sensor_data, timestamps = load_data(csv_path)
-    print(f"  {len(sensor_data)} frames  |  "
-          f"{timestamps[-1]/1000:.2f} s  |  "
+    sensor_data_full, timestamps_full = load_data(csv_path)
+    peak_total = max(sensor_data_full.sum(axis=1).max(), 1.0)
+    print(f"  {len(sensor_data_full)} frames  |  "
+          f"{timestamps_full[-1]/1000:.2f} s  |  "
           f"sensors: {SENSOR_KEYS}")
+    print(f"  Global peak total load: {peak_total:.0f} g")
 
     # Time range filter
-    if args.start is not None or args.end is not None:
-        t_ms = timestamps
-        lo = (args.start * 1000) if args.start else t_ms[0]
-        hi = (args.end   * 1000) if args.end   else t_ms[-1]
-        mask_t = (t_ms >= lo) & (t_ms <= hi)
-        sensor_data = sensor_data[mask_t]
-        timestamps  = timestamps[mask_t]
-        print(f"  Trimmed to {len(sensor_data)} frames "
-              f"({lo/1000:.2f}s – {hi/1000:.2f}s)")
+    t_ms = timestamps_full
+    lo = args.start * 1000 if args.start is not None else t_ms[0]
+    hi = args.end   * 1000 if args.end   is not None else t_ms[-1]
+    mask_t = (t_ms >= lo) & (t_ms <= hi)
+    sensor_data = sensor_data_full[mask_t]
+    timestamps  = timestamps_full[mask_t]
+    print(f"  Cropped to {len(sensor_data)} frames ({lo/1000:.1f}s – {hi/1000:.1f}s)")
 
     # Colormap range
     vmax = args.vmax
@@ -421,7 +457,9 @@ def main():
     # Animate + save
     print("\nAnimating…")
     make_animation(sensor_data, timestamps, pressures,
-                   outline, gx, gy, mask, vmax, args.fps, output_path)
+                   outline, gx, gy, mask, vmax, args.fps, output_path,
+                   peak_total=peak_total,
+                   low_pct=args.low, high_pct=args.high)
 
     print(f"\n{'═'*54}")
     print(f"  MP4 saved → {output_path}")
