@@ -84,7 +84,9 @@ SENSOR_LABELS = {
     'L2': 'Lateral\nHeel',
 }
 
-BG = '#0d1117'
+BG  = '#ffffff'   # white background
+FG  = '#222222'   # primary text
+FG2 = '#666666'   # secondary text
 
 
 # ── Geometry helpers ──────────────────────────────────────────────────────────
@@ -198,7 +200,7 @@ def make_animation(sensor_data, timestamps, pressures,
     norm = Normalize(vmin=0, vmax=vmax)
 
     # ── Figure layout ──────────────────────────────────────────────────────
-    fig = plt.figure(figsize=(7, 10), facecolor=BG)
+    fig = plt.figure(figsize=(8, 12), facecolor=BG)
     gs  = GridSpec(3, 1, figure=fig,
                    height_ratios=[0.08, 1, 0.10],
                    hspace=0.06)
@@ -211,23 +213,23 @@ def make_animation(sensor_data, timestamps, pressures,
         ax.set_facecolor(BG)
 
     # Static foot silhouette background
-    ax_foot.fill(outline[:, 0], outline[:, 1], color='#111', zorder=1)
+    ax_foot.fill(outline[:, 0], outline[:, 1], color='#eeeeee', zorder=1)
     outline_closed = np.vstack([outline, outline[0]])
     ax_foot.plot(outline_closed[:, 0], outline_closed[:, 1],
-                 color='white', linewidth=1.2, alpha=0.5, zorder=5)
+                 color='#333333', linewidth=1.2, alpha=0.7, zorder=5)
 
     # Anatomical labels
     ax_foot.text(0.50, -0.08, 'HEEL', ha='center', va='top',
-                 fontsize=8, color='#666', style='italic',
+                 fontsize=12, color=FG2, style='italic',
                  transform=ax_foot.transData)
     ax_foot.text(0.50, 2.47, 'TOES', ha='center', va='bottom',
-                 fontsize=8, color='#666', style='italic',
+                 fontsize=12, color=FG2, style='italic',
                  transform=ax_foot.transData)
     ax_foot.text(-0.06, 1.10, 'MEDIAL', ha='left', va='center',
-                 fontsize=7, color='#555', rotation=90,
+                 fontsize=10, color='#aaaaaa', rotation=90,
                  transform=ax_foot.transData)
     ax_foot.text(1.06, 1.10, 'LATERAL', ha='right', va='center',
-                 fontsize=7, color='#555', rotation=90,
+                 fontsize=10, color='#aaaaaa', rotation=90,
                  transform=ax_foot.transData)
 
     ax_foot.set_xlim(-0.12, 1.12)
@@ -240,19 +242,19 @@ def make_animation(sensor_data, timestamps, pressures,
     sm.set_array([])
     cbar_ax = ax_foot.inset_axes([1.03, 0.12, 0.04, 0.76])
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation='vertical')
-    cbar.set_label('Pressure (g)', color='white', fontsize=9, labelpad=6)
-    cbar.ax.yaxis.set_tick_params(color='white', labelcolor='white', labelsize=8)
-    cbar.outline.set_edgecolor('#444')
+    cbar.set_label('Pressure (g)', color=FG, fontsize=12, labelpad=8)
+    cbar.ax.yaxis.set_tick_params(color=FG2, labelcolor=FG, labelsize=10)
+    cbar.outline.set_edgecolor('#cccccc')
 
     # ── Title panel ────────────────────────────────────────────────────────
     ax_title.axis('off')
     title_txt = ax_title.text(0.5, 0.65, 'Plantar Pressure — Left Foot',
-                              ha='center', va='center', fontsize=13,
-                              fontweight='bold', color='white',
+                              ha='center', va='center', fontsize=18,
+                              fontweight='bold', color=FG,
                               transform=ax_title.transAxes)
     time_txt = ax_title.text(0.5, 0.10, '',
-                             ha='center', va='center', fontsize=9,
-                             color='#8b949e', transform=ax_title.transAxes)
+                             ha='center', va='center', fontsize=12,
+                             color=FG2, transform=ax_title.transAxes)
 
     # ── Total-force bar (% of global peak, with tolerance zones) ──────────
     ax_bar.set_facecolor(BG)
@@ -263,31 +265,31 @@ def make_animation(sensor_data, timestamps, pressures,
     LOW, HIGH = low_pct, high_pct   # tolerance thresholds in %
 
     # Background track
-    ax_bar.barh([0], [100], color='#21262d', height=0.7, left=0, zorder=1)
+    ax_bar.barh([0], [100], color='#e0e0e0', height=0.7, left=0, zorder=1)
 
     # Tolerance zone shading (green band between LOW and HIGH)
-    ax_bar.barh([0], [HIGH - LOW], color='#1a3a1a', height=0.7,
-                left=LOW, zorder=2, alpha=0.6)
+    ax_bar.barh([0], [HIGH - LOW], color='#c8e6c9', height=0.7,
+                left=LOW, zorder=2, alpha=0.8)
 
     # Fixed tolerance lines + offset labels so they don't overlap the line
     ax_bar.axvline(LOW,  color='#4fc3f7', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
     ax_bar.axvline(HIGH, color='#ff6b6b', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
-    ax_bar.text(LOW  + 1.5, 0.42, f'MIN {LOW:.0f}%',  ha='left',  va='bottom', fontsize=7,
+    ax_bar.text(LOW  + 1.5, 0.42, f'MIN {LOW:.0f}%',  ha='left',  va='bottom', fontsize=10,
                 color='#4fc3f7', fontweight='bold')
-    ax_bar.text(HIGH + 1.5, 0.42, f'MAX {HIGH:.0f}%', ha='left',  va='bottom', fontsize=7,
+    ax_bar.text(HIGH + 1.5, 0.42, f'MAX {HIGH:.0f}%', ha='left',  va='bottom', fontsize=10,
                 color='#ff6b6b', fontweight='bold')
 
     # Label axes
-    ax_bar.text(0,   -0.55, '0%',   ha='left',   va='top', fontsize=7, color='#555')
-    ax_bar.text(100, -0.55, '100%', ha='right',  va='top', fontsize=7, color='#555')
+    ax_bar.text(0,   -0.55, '0%',   ha='left',   va='top', fontsize=10, color=FG2)
+    ax_bar.text(100, -0.55, '100%', ha='right',  va='top', fontsize=10, color=FG2)
     ax_bar.text(50,  -0.55, '% Body Weight', ha='center', va='top',
-                fontsize=7.5, color='#8b949e')
+                fontsize=11, color=FG2)
 
     # Dynamic bar (starts at 0)
     bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.7, left=0, zorder=3)
     bar_label = ax_bar.text(50, 1.1, '0%',
-                            ha='center', va='center', fontsize=9,
-                            fontweight='bold', color='white')
+                            ha='center', va='center', fontsize=14,
+                            fontweight='bold', color=FG)
 
     # ── Initial heatmap (RGBA imshow — reliable for animation) ────────────
     # Build extent to match the gx/gy meshgrid
@@ -297,7 +299,7 @@ def make_animation(sensor_data, timestamps, pressures,
     def frame_rgba(pressure_2d):
         """Convert a pressure grid + mask → RGBA array for imshow."""
         rgba = cmap(norm(pressure_2d)).copy()   # (res, res, 4)
-        rgba[~mask] = (0.067, 0.067, 0.071, 1.0)  # dark background outside foot
+        rgba[~mask] = (1.0, 1.0, 1.0, 1.0)  # white background outside foot
         return rgba
 
     im = ax_foot.imshow(frame_rgba(pressures[0]),
@@ -311,13 +313,13 @@ def make_animation(sensor_data, timestamps, pressures,
     val_artists = []
     for i, key in enumerate(SENSOR_KEYS):
         px, py = sensor_pts[i]
-        dot, = ax_foot.plot(px, py, 'o', color='white', markersize=5,
-                            markeredgecolor='#333', markeredgewidth=0.8, zorder=7)
+        dot, = ax_foot.plot(px, py, 'o', color='white', markersize=8,
+                            markeredgecolor='#333', markeredgewidth=1.0, zorder=7)
         txt = ax_foot.text(px, py + 0.10, '0 g',
-                           ha='center', va='bottom', fontsize=6,
-                           color='white', fontweight='bold', zorder=8,
+                           ha='center', va='bottom', fontsize=10,
+                           color=FG, fontweight='bold', zorder=8,
                            bbox=dict(boxstyle='round,pad=0.15',
-                                     facecolor='black', alpha=0.6,
+                                     facecolor='white', alpha=0.75,
                                      edgecolor='none'))
         dot_artists.append(dot)
         val_artists.append(txt)
@@ -350,7 +352,7 @@ def make_animation(sensor_data, timestamps, pressures,
         bar_fill[0].set_width(pct)
         bar_fill[0].set_facecolor(color)
         bar_label.set_text(f'{pct:.0f}%')
-        bar_label.set_color(color)
+        bar_label.set_color(FG)
 
         return [im, time_txt, bar_label, bar_fill[0]] + val_artists
 
