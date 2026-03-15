@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Insole Gait Intelligence</title>
+<style>
+  :root {
+    --bg:      #0d1117;
+    --card:    #161b22;
+    --border:  #30363d;
+    --text:    #e6edf3;
+    --muted:   #8b949e;
+    --left:    #4fc3f7;
+    --right:   #ef5350;
+    --warn:    #ff9800;
+    --danger:  #f44336;
+    --ok:      #4caf50;
+    --purple:  #bb86fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 14px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #555; display: inline-block; margin-right: 7px; transition: background 0.4s; }
+  .status-dot.live { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .status-label { font-size: 12px; color: var(--muted); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 16px; margin-bottom: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; animation: fadeIn 0.4s ease; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 14px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .skeleton { background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-line { height: 12px; margin-bottom: 8px; border-radius: 3px; }
+
+  .patient-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .patient-sub  { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--muted); }
+  .wb-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,152,0,0.15); color: var(--warn); border: 1px solid rgba(255,152,0,0.3); margin-top: 10px; }
+
+  .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-name { color: var(--muted); font-size: 12px; }
+  .metric-val  { font-size: 15px; font-weight: 600; }
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px; }
+  .badge-ok     { background: rgba(76,175,80,0.15);  color: var(--ok);     border: 1px solid rgba(76,175,80,0.3); }
+  .badge-warn   { background: rgba(255,152,0,0.15);  color: var(--warn);   border: 1px solid rgba(255,152,0,0.3); }
+  .badge-danger { background: rgba(244,67,54,0.15);  color: var(--danger); border: 1px solid rgba(244,67,54,0.3); }
+  .force-bars { display: flex; gap: 8px; margin-top: 10px; }
+  .force-bar-wrap { flex: 1; }
+  .force-bar-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .force-bar-track { background: #21262d; border-radius: 3px; height: 8px; overflow: hidden; }
+  .force-bar-fill  { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  .priority-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 12px; }
+  .priority-urgent  { background: rgba(244,67,54,0.15);  color: var(--danger); border: 1px solid rgba(244,67,54,0.4);  animation: pulse 1.8s infinite; }
+  .priority-soon    { background: rgba(255,152,0,0.15);  color: var(--warn);   border: 1px solid rgba(255,152,0,0.4); }
+  .priority-routine { background: rgba(76,175,80,0.15);  color: var(--ok);     border: 1px solid rgba(76,175,80,0.3); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,67,54,0.4); } 50% { box-shadow: 0 0 0 6px rgba(244,67,54,0); } }
+  .clinical-summary { line-height: 1.6; color: var(--text); margin-bottom: 14px; font-size: 13px; }
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 6px; }
+  .flags-list { list-style: none; margin-bottom: 12px; }
+  .flags-list li { padding: 4px 0; font-size: 12px; color: var(--warn); }
+  .flags-list li::before { content: "⚠  "; }
+  .recs-list { list-style: none; counter-reset: rec; }
+  .recs-list li { counter-increment: rec; padding: 4px 0; font-size: 12px; color: var(--text); display: flex; gap: 8px; }
+  .recs-list li::before { content: counter(rec); color: var(--purple); font-weight: 700; min-width: 16px; }
+
+  .img-card img { width: 100%; border-radius: 6px; display: block; }
+  .img-placeholder { width: 100%; aspect-ratio: 16/9; background: #21262d; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; gap: 8px; }
+  .img-caption { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; }
+
+  .fhir-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  .fhir-table td { padding: 7px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .fhir-table td:first-child { color: var(--muted); width: 45%; }
+  .fhir-table tr:last-child td { border-bottom: none; }
+  .check { color: var(--ok); margin-right: 6px; }
+  .fhir-link { color: var(--left); text-decoration: none; font-size: 12px; }
+  .fhir-link:hover { text-decoration: underline; }
+  .json-preview { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: "SF Mono", "Fira Code", monospace; font-size: 11px; color: #a5d6ff; line-height: 1.6; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--left); }
+  .btn { background: var(--left); color: #0d1117; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip { background: #21262d; border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+  .chip:hover { border-color: var(--left); color: var(--left); }
+  .search-results { display: flex; flex-direction: column; gap: 8px; }
+  .result-card { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+  .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .result-patient { font-weight: 600; font-size: 13px; }
+  .sim-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .sim-bar-track { width: 80px; height: 5px; background: #21262d; border-radius: 3px; overflow: hidden; }
+  .sim-bar-fill  { height: 100%; border-radius: 3px; }
+  .sim-val { font-size: 11px; color: var(--muted); width: 36px; text-align: right; }
+  .result-summary { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .search-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 20px 0; }
+  .search-error { color: var(--danger); font-size: 12px; padding: 10px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🦶 Smart Insole Gait Intelligence</h1>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span class="status-dot" id="iris-dot"></span>
+    <span class="status-label" id="iris-label">Checking IRIS...</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ROW 1: Patient | Metrics | AI Analysis -->
+  <div class="grid-3">
+
+    <div class="card">
+      <div class="card-title">Patient</div>
+      <div class="patient-name">Jane Smith</div>
+      <div class="patient-sub">58 F &nbsp;·&nbsp; 82 kg &nbsp;·&nbsp; Day 14 post-op</div>
+      <div class="info-row"><span class="info-label">Condition</span><span>Tibial plateau fracture (R)</span></div>
+      <div class="info-row"><span class="info-label">Surgery</span><span>ORIF locking plate</span></div>
+      <div class="info-row"><span class="info-label">WB Restriction</span><span>Toe-touch (max 20% BW)</span></div>
+      <div class="info-row"><span class="info-label">Max allowed force</span><span>≈ 164 N</span></div>
+      <div class="info-row"><span class="info-label">FHIR Patient ID</span><span id="patient-fhir-id" style="color:var(--muted)">—</span></div>
+      <div><span class="wb-badge">⚠ Weight-Bearing Restricted</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Gait Metrics</div>
+      <div id="metrics-loading">
+        <div class="skel-line skeleton" style="width:80%"></div>
+        <div class="skel-line skeleton" style="width:60%"></div>
+        <div class="skel-line skeleton" style="width:70%"></div>
+        <div class="skel-line skeleton" style="width:50%"></div>
+      </div>
+      <div id="metrics-content" style="display:none">
+        <div class="metric-row">
+          <span class="metric-name">Cadence</span>
+          <span><span class="metric-val" id="m-cadence">—</span> <span style="font-size:11px;color:var(--muted)">steps/min</span></span>
+          <span class="badge badge-ok">NORMAL</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-name">Force Symmetry Index</span>
+          <span class="metric-val" id="m-fsi">—</span>
+          <span class="badge" id="m-fsi-badge">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-name">Timing Symmetry Index</span>
+          <span class="metric-val" id="m-tsi">—</span>
+          <span class="badge" id="m-tsi-badge">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-name">Strides detected</span>
+          <span class="metric-val">
+            <span id="m-strides-l" style="color:var(--left)">—</span> L &nbsp;/&nbsp;
+            <span id="m-strides-r" style="color:var(--right)">—</span> R
+          </span>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="section-label">Peak Force</div>
+          <div class="force-bars">
+            <div class="force-bar-wrap">
+              <div class="force-bar-label" style="color:var(--left)">Left foot</div>
+              <div class="force-bar-track"><div class="force-bar-fill" id="bar-left" style="width:0%;background:var(--left)"></div></div>
+              <div style="font-size:11px;color:var(--left);margin-top:3px;" id="val-left">—</div>
+            </div>
+            <div class="force-bar-wrap">
+              <div class="force-bar-label" style="color:var(--right)">Right foot</div>
+              <div class="force-bar-track"><div class="force-bar-fill" id="bar-right" style="width:0%;background:var(--right)"></div></div>
+              <div style="font-size:11px;color:var(--right);margin-top:3px;" id="val-right">—</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--danger);margin-top:6px;" id="wb-warning"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Claude AI Analysis</div>
+      <div id="ai-loading">
+        <div class="skel-line skeleton" style="width:40%"></div>
+        <div class="skel-line skeleton" style="width:100%"></div>
+        <div class="skel-line skeleton" style="width:90%"></div>
+        <div class="skel-line skeleton" style="width:95%"></div>
+        <div class="skel-line skeleton" style="width:70%"></div>
+      </div>
+      <div id="ai-content" style="display:none">
+        <div id="priority-badge" class="priority-badge"></div>
+        <p class="clinical-summary" id="ai-summary"></p>
+        <div class="section-label">Risk Flags</div>
+        <ul class="flags-list" id="ai-flags"></ul>
+        <div class="section-label">Recommendations</div>
+        <ol class="recs-list" id="ai-recs"></ol>
+      </div>
+      <div id="ai-empty" style="display:none;color:var(--muted);font-size:12px;line-height:1.7;">
+        No analysis yet. Run:<br>
+        <code style="color:var(--left)">cd src && python main.py --csv ../data/gait_data.csv</code>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 2: Visualizations -->
+  <div class="grid-2">
+
+    <div class="card img-card">
+      <div class="card-title">Plantar Pressure Distribution</div>
+      <img src="/images/heatmap.png" alt="Heatmap"
+           onerror="this.style.display='none';document.getElementById('heatmap-ph').style.display='flex'">
+      <div id="heatmap-ph" class="img-placeholder" style="display:none">
+        <span style="font-size:28px">🦶</span>
+        <span>Run <code style="color:var(--left)">python run_demo.py</code> in GrandHack26/ to generate</span>
+      </div>
+      <div class="img-caption">30-second time average · RBF interpolation · turbo colormap</div>
+    </div>
+
+    <div class="card img-card">
+      <div class="card-title">Gait Analysis Dashboard</div>
+      <img src="/images/gait_analysis.png" alt="Gait Analysis"
+           onerror="this.style.display='none';document.getElementById('gait-ph').style.display='flex'">
+      <div id="gait-ph" class="img-placeholder" style="display:none">
+        <span style="font-size:28px">📈</span>
+        <span>Run <code style="color:var(--left)">python run_demo.py</code> in GrandHack26/ to generate</span>
+      </div>
+      <div class="img-caption">Force traces · step intervals · stance symmetry · limp detection</div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3: FHIR | Vector Search -->
+  <div class="grid-2">
+
+    <div class="card">
+      <div class="card-title">FHIR R4 Resources — InterSystems IRIS</div>
+      <div id="fhir-loading">
+        <div class="skel-line skeleton" style="width:70%"></div>
+        <div class="skel-line skeleton" style="width:55%"></div>
+        <div class="skel-line skeleton" style="width:65%"></div>
+        <div class="skel-line skeleton" style="width:60%"></div>
+      </div>
+      <div id="fhir-content" style="display:none">
+        <table class="fhir-table">
+          <tr><td>Patient</td><td><span class="check">✓</span><span id="fhir-patient">—</span></td></tr>
+          <tr><td>Device</td><td><span class="check">✓</span><span id="fhir-device">—</span></td></tr>
+          <tr><td>Observations</td><td><span class="check">✓</span>14 gait metrics stored</td></tr>
+          <tr><td>DiagnosticReport</td><td><span class="check">✓</span><span id="fhir-report">—</span></td></tr>
+        </table>
+        <div style="margin-bottom:12px;display:flex;gap:16px;">
+          <a class="fhir-link" href="http://localhost:32783/csp/healthshare/demo/fhir/r4/Patient" target="_blank">Browse FHIR Server →</a>
+          <a class="fhir-link" href="http://localhost:32783/fhir/portal/patientlist.html" target="_blank">Patient Portal →</a>
+        </div>
+        <div class="section-label">DiagnosticReport — Clinical Conclusion</div>
+        <div class="json-preview" id="fhir-conclusion">Loading…</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Semantic Vector Search — Patient Cohort</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Natural language search across all gait analyses stored in IRIS (384-dim embeddings)</div>
+      <div class="search-row">
+        <input class="search-input" id="search-input" type="text" placeholder="e.g. patient exceeding weight bearing limits…">
+        <button class="btn" id="search-btn" onclick="runSearch()">Search</button>
+      </div>
+      <div class="chips">
+        <span class="chip" onclick="quickSearch('asymmetric gait pattern')">asymmetric gait</span>
+        <span class="chip" onclick="quickSearch('weight bearing exceeded surgical limb')">weight bearing exceeded</span>
+        <span class="chip" onclick="quickSearch('urgent follow-up needed')">urgent follow-up</span>
+        <span class="chip" onclick="quickSearch('normal symmetric recovery good progress')">normal recovery</span>
+      </div>
+      <div id="search-results" class="search-results">
+        <div class="search-empty">Enter a query to search across stored patient analyses</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  checkIRIS();
+  loadResults();
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runSearch();
+  });
+});
+
+async function checkIRIS() {
+  try {
+    const r = await fetch('/api/fhir/patients');
+    const dot = document.getElementById('iris-dot');
+    const lbl = document.getElementById('iris-label');
+    if (r.ok) {
+      dot.classList.add('live');
+      lbl.textContent = 'IRIS Connected';
+      lbl.style.color = 'var(--ok)';
+    } else {
+      lbl.textContent = 'IRIS Unavailable';
+    }
+  } catch { document.getElementById('iris-label').textContent = 'IRIS Unavailable'; }
+}
+
+async function loadResults() {
+  try {
+    const r = await fetch('/api/results');
+    const data = await r.json();
+    if (!data.analysis) {
+      ['metrics-loading','ai-loading','fhir-loading'].forEach(id => document.getElementById(id).style.display='none');
+      document.getElementById('ai-empty').style.display = 'block';
+      return;
+    }
+    renderMetrics(data.analysis.raw_metrics);
+    renderAI(data.analysis.clinical_interpretation);
+    renderFHIR(data.fhir_refs || {});
+  } catch(e) { console.error(e); }
+}
+
+function renderMetrics(m) {
+  document.getElementById('metrics-loading').style.display = 'none';
+  document.getElementById('metrics-content').style.display = 'block';
+  document.getElementById('m-cadence').textContent   = m.cadence_steps_per_min;
+  document.getElementById('m-strides-l').textContent = m.total_strides_left;
+  document.getElementById('m-strides-r').textContent = m.total_strides_right;
+
+  const fsi = m.symmetry_index_force;
+  document.getElementById('m-fsi').textContent = fsi.toFixed(1) + '%';
+  const fb = document.getElementById('m-fsi-badge');
+  if (fsi < 10)      { fb.textContent='NORMAL';  fb.className='badge badge-ok'; }
+  else if (fsi < 15) { fb.textContent='MILD';    fb.className='badge badge-warn'; }
+  else               { fb.textContent='FLAGGED'; fb.className='badge badge-danger'; }
+
+  const tsi = m.symmetry_index_timing;
+  document.getElementById('m-tsi').textContent = tsi.toFixed(1) + '%';
+  const tb = document.getElementById('m-tsi-badge');
+  tb.textContent = tsi < 5 ? 'NORMAL' : tsi < 10 ? 'MILD' : 'FLAGGED';
+  tb.className   = 'badge ' + (tsi < 5 ? 'badge-ok' : tsi < 10 ? 'badge-warn' : 'badge-danger');
+
+  setTimeout(() => {
+    document.getElementById('bar-left').style.width  = Math.min((m.avg_peak_force_left_N  / 500)*100, 100) + '%';
+    document.getElementById('bar-right').style.width = Math.min((m.avg_peak_force_right_N / 500)*100, 100) + '%';
+  }, 200);
+  document.getElementById('val-left').textContent  = m.avg_peak_force_left_N.toFixed(0)  + ' N avg';
+  document.getElementById('val-right').textContent = m.avg_peak_force_right_N.toFixed(0) + ' N avg';
+
+  if (m.max_force_right_N > 164) {
+    document.getElementById('wb-warning').textContent =
+      `⚠ Peak right: ${m.max_force_right_N.toFixed(0)} N — ${((m.max_force_right_N/164-1)*100).toFixed(0)}% over prescribed limit (164 N)`;
+  }
+}
+
+function renderAI(interp) {
+  document.getElementById('ai-loading').style.display = 'none';
+  if (!interp) { document.getElementById('ai-empty').style.display = 'block'; return; }
+  document.getElementById('ai-content').style.display = 'block';
+
+  const pri = (interp.follow_up_priority || 'routine').toLowerCase();
+  const badge = document.getElementById('priority-badge');
+  const labels  = { urgent:'🔴 URGENT FOLLOW-UP', soon:'🟠 FOLLOW UP SOON', routine:'🟢 ROUTINE' };
+  const classes = { urgent:'priority-urgent', soon:'priority-soon', routine:'priority-routine' };
+  badge.textContent = labels[pri] || pri.toUpperCase();
+  badge.className   = 'priority-badge ' + (classes[pri] || 'priority-routine');
+
+  document.getElementById('ai-summary').textContent = interp.clinical_summary || '';
+
+  const flags = document.getElementById('ai-flags');
+  flags.innerHTML = '';
+  (interp.risk_flags || []).forEach(f => { const li=document.createElement('li'); li.textContent=f; flags.appendChild(li); });
+
+  const recs = document.getElementById('ai-recs');
+  recs.innerHTML = '';
+  (interp.recommendations || []).forEach(r => { const li=document.createElement('li'); li.textContent=r; recs.appendChild(li); });
+}
+
+function renderFHIR(refs) {
+  document.getElementById('fhir-loading').style.display = 'none';
+  document.getElementById('fhir-content').style.display = 'block';
+  document.getElementById('fhir-patient').textContent  = refs.patient_ref || '—';
+  document.getElementById('fhir-device').textContent   = refs.device_ref  || '—';
+  document.getElementById('fhir-report').textContent   = refs.report_ref  || '—';
+  document.getElementById('patient-fhir-id').textContent = refs.patient_ref || '—';
+
+  const reportRef = refs.report_ref;
+  if (reportRef && reportRef !== 'DiagnosticReport/placeholder') {
+    const id = reportRef.split('/')[1];
+    fetch(`/api/fhir/report/${id}`)
+      .then(r => r.json())
+      .then(rep => {
+        const raw = rep.conclusion || '(no conclusion in report)';
+        document.getElementById('fhir-conclusion').textContent = raw.slice(0, 400) + (raw.length > 400 ? '…' : '');
+      })
+      .catch(() => { document.getElementById('fhir-conclusion').textContent = reportRef; });
+  } else {
+    document.getElementById('fhir-conclusion').textContent = '(run pipeline to populate)';
+  }
+}
+
+function quickSearch(q) {
+  document.getElementById('search-input').value = q;
+  runSearch();
+}
+
+async function runSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('search-btn');
+  const box = document.getElementById('search-results');
+  btn.disabled = true; btn.textContent = '…';
+  box.innerHTML = '<div class="search-empty">Searching IRIS vector store…</div>';
+
+  try {
+    const r = await fetch('/api/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query: q})
+    });
+    const data = await r.json();
+    if (data.error) { box.innerHTML = `<div class="search-error">Error: ${data.error}</div>`; return; }
+    if (!data.results?.length) { box.innerHTML = '<div class="search-empty">No results found.</div>'; return; }
+
+    box.innerHTML = '';
+    data.results.forEach(res => {
+      const sim = res.similarity || 0;
+      const pct = Math.round(sim * 100);
+      const col = sim > 0.6 ? 'var(--ok)' : sim > 0.4 ? 'var(--warn)' : 'var(--right)';
+      const pc  = {urgent:'badge-danger', soon:'badge-warn', routine:'badge-ok'}[res.follow_up_priority] || 'badge-ok';
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      card.innerHTML = `
+        <div class="result-header">
+          <span class="result-patient">Patient ${res.patient_id}</span>
+          <div class="sim-bar-wrap">
+            <div class="sim-bar-track"><div class="sim-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+            <span class="sim-val">${pct}%</span>
+            <span class="badge ${pc}" style="font-size:9px">${(res.follow_up_priority||'').toUpperCase()}</span>
+          </div>
+        </div>
+        <div class="result-summary">${(res.clinical_summary||'').slice(0,150)}${(res.clinical_summary||'').length>150?'…':''}</div>`;
+      box.appendChild(card);
+    });
+  } catch(e) {
+    box.innerHTML = `<div class="search-error">Could not reach IRIS: ${e.message}</div>`;
+  } finally { btn.disabled=false; btn.textContent='Search'; }
+}
+</script>
+</body>
+</html>
