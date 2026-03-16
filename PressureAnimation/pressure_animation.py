@@ -411,10 +411,12 @@ def main():
                         help="Start time in seconds (default: 41.5 — walking section)")
     parser.add_argument("--end",    type=float, default=56.5,
                         help="End time in seconds (default: 56.5 — walking section)")
-    parser.add_argument("--low",    type=float, default=15.0,
-                        help="Lower tolerance threshold as %% of peak (default: 15)")
-    parser.add_argument("--high",   type=float, default=75.0,
-                        help="Upper tolerance threshold as %% of peak (default: 75)")
+    parser.add_argument("--low",        type=float, default=10.0,
+                        help="Lower tolerance threshold as %% of body weight (default: 10)")
+    parser.add_argument("--high",       type=float, default=40.0,
+                        help="Upper tolerance threshold as %% of body weight (default: 40)")
+    parser.add_argument("--bodyweight", type=float, default=140.0,
+                        help="Patient body weight in lbs used for %% normalization (default: 140)")
     args = parser.parse_args()
 
     csv_path    = args.csv
@@ -426,14 +428,15 @@ def main():
     print(f"  Output: {output_path}")
     print(f"{'═'*54}\n")
 
-    # Load data (full CSV first — need global peak for % normalization)
+    # Load data
     print("Loading CSV…")
     sensor_data_full, timestamps_full = load_data(csv_path)
-    peak_total = max(sensor_data_full.sum(axis=1).max(), 1.0)
+    # Normalize bar to body weight (lbs → grams)
+    peak_total = args.bodyweight * 453.592
     print(f"  {len(sensor_data_full)} frames  |  "
           f"{timestamps_full[-1]/1000:.2f} s  |  "
           f"sensors: {SENSOR_KEYS}")
-    print(f"  Global peak total load: {peak_total:.0f} g")
+    print(f"  Body weight: {args.bodyweight:.0f} lbs ({peak_total/1000:.1f} kg) — used for % normalization")
 
     # Time range filter
     t_ms = timestamps_full
