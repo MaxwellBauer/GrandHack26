@@ -1,12 +1,21 @@
+.claude/
 __pycache__/
 *.py[cod]
 *.pyc
 .DS_Store
+**/.DS_Store
+
+# Generated video output (keep demo)
+*.mp4
+!PressureAnimation/output.mp4
+
+# Archives / tarballs
+*.tar.gz
+*.zip
+
+# Environment
+.env
+*.env.local
 
 # Generated data (regenerated on first run)
-data/gait_data.csv
-
-# Leftover files from earlier experiments
-data/gait_avatar.gif
-data/stickfigure.png
-avatar_viz.py
+Analysis/data/gait_data.csv

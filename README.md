@@ -1,120 +1,78 @@
-# GrandHack26 — Smart Shoe Pressure Sensor Demo
+# InStride — Smart Insole Gait Intelligence
 
-A proof-of-concept for post-surgical rehabilitation monitoring using embedded shoe pressure sensors. Simulates a patient with a right-foot limp and produces clinical-quality visualizations from 14-channel plantar pressure data.
-
----
-
-## Overview
-
-After surgery, quantifying how much load a patient puts on the recovering foot is critical — but difficult to observe clinically. This system uses 7 force sensors per shoe (14 total) to:
-
-- Map real-time plantar pressure across the entire foot
-- Detect gait asymmetry and limp automatically
-- Track cadence and stance-phase timing over time
-
-This demo uses **synthetically generated data** (realistic gait physics with an injected limp) to demonstrate what a live hardware deployment would produce.
+**MIT GrandHack 2026** — Post-surgical rehabilitation platform using pressure-sensing insoles to quantify foot loading, detect gait anomalies, and track recovery progress.
 
 ---
 
-## Sensor Layout
-
-Each shoe contains 7 pressure sensors:
-
-```
-  [toe_L]  [toe_C]  [toe_R]      ← 3 metatarsal-head sensors
-     [mid_L]     [mid_R]         ← 2 arch/midsole sensors
-     [heel_L]    [heel_R]        ← 2 heel sensors
-```
-
-Forces are recorded in **Newtons** at **100 Hz**. At peak stance, a ~70 kg person produces ≈700 N total across both feet.
-
----
-
-## Outputs
-
-### 1. Plantar Pressure Heat Map
-
-![Plantar Pressure Heat Map](data/heatmap.png)
-
-- **Left foot** — normal loading pattern
-- **Right foot** — reduced loading (limp simulation, 72% of normal)
-- RBF interpolation between sensor points for smooth pressure gradients
-- Anatomically correct foot silhouette with sensor markers and force labels in Newtons
-
-### 2. Gait Analysis Dashboard
-
-![Gait Analysis Dashboard](data/gait_analysis.png)
-
-- **Force traces** — total foot force over 30 seconds with heel-strike markers
-- **Step intervals** — cadence stability bar chart vs. expected 1.0 s/step
-- **Symmetry summary** — stance duration comparison with asymmetry index; flags "Limp Detected" when asymmetry > 15%
-
----
-
-## Gait Simulation Details
-
-| Parameter | Left Foot (Normal) | Right Foot (Limp) |
-|---|---|---|
-| Load factor | 100% | 72% |
-| Stance duration | 60% of cycle | 50% of cycle |
-| Heel-strike delay | — | +0.04 s |
-| Cadence | 1.0 steps/s | 1.0 steps/s |
-
-Pressure distribution per anatomical zone (normal foot):
-- **Heel** — ~40% body weight (initial contact through midstance)
-- **Arch/midsole** — ~9% body weight (arch rarely contacts ground)
-- **Metatarsal heads** — ~51% body weight (push-off spike)
-
----
-
-## Project Structure
+## Repository Structure
 
 ```
 GrandHack26/
-├── generate_data.py      # Synthetic gait CSV generation
-├── heatmap_viz.py        # Plantar pressure heat map
-├── gait_viz.py           # Gait timeline + metrics dashboard
-├── run_demo.py           # Entry point — runs everything
-├── requirements.txt
-└── data/
-    ├── gait_data.csv     # Auto-generated (created on first run)
-    ├── heatmap.png
-    └── gait_analysis.png
+├── PressureAnimation/      # Real-sensor insole pressure animation
+├── Analysis/               # Synthetic gait data generation & visualization
+└── Backend-FHIR/           # Clinical dashboard, FHIR R4, IRIS vector search
 ```
 
 ---
 
-## Quickstart
+## Modules
+
+### `PressureAnimation/`
+Generates a 15-second MP4 animation of plantar pressure from a 5-sensor insole CSV. A pre-rendered demo (`output.mp4`) is included.
+
+- **Sensors:** U1 (medial forefoot), U2 (lateral forefoot), M1 (midfoot), L1 (medial heel), L2 (lateral heel)
+- **Features:** RBF-interpolated heatmap, % body weight bar with MIN/MAX tolerance bands (blue/green/red), real sensor data scaled to physiological walking loads (~70 kg)
+- **Input:** `scaled_sensor_data.csv` (16× scaled, realistic gram values)
 
 ```bash
+cd PressureAnimation
+pip install numpy pandas matplotlib scipy
+python pressure_animation.py scaled_sensor_data.csv output.mp4
+```
+
+---
+
+### `Analysis/`
+Synthetic 14-sensor gait data generation and three clinical visualizations.
+
+- `generate_data.py` — Simulates a 30s walk with a right-foot limp at 100 Hz
+- `heatmap_viz.py` — Plantar pressure heatmap (left vs right foot)
+- `gait_viz.py` — Force traces, step intervals, symmetry index
+- `run_demo.py` — Runs all three in sequence
+
+```bash
+cd Analysis
 pip install -r requirements.txt
 python run_demo.py
 ```
 
-On first run, `generate_data.py` creates a 30-second synthetic gait recording (~3,000 rows at 100 Hz). Both visualizations are then rendered and saved to `data/`.
-
 ---
 
-## Requirements
+### `Backend-FHIR/`
+Flask web dashboard integrating Claude AI, FHIR R4 (InterSystems IRIS), and semantic vector search.
 
+- Gait analysis → Claude narrative → FHIR DiagnosticReport → IRIS vector store
+- Semantic search: *"patients with asymmetric gait"*, *"urgent follow-up needed"*
+- 14 synthetic demo patients pre-seeded
+
+```bash
+cd Backend-FHIR
+pip install -r requirements.txt
+python app.py          # Dashboard at http://localhost:5050
+python seed_patients.py  # Seed IRIS with demo patients (requires Docker)
 ```
-numpy>=1.24
-pandas>=2.0
-matplotlib>=3.7
-scipy>=1.10
-```
+
+See `Backend-FHIR/README.md` for full setup including Docker + IRIS.
 
 ---
 
-## Clinical Motivation
+## Tech Stack
 
-Post-surgical patients often unconsciously offload a recovering limb — a compensatory pattern that, if left uncorrected, can lead to secondary injuries and slowed healing. Traditional observation is subjective and infrequent. Continuous sensor-based monitoring enables:
-
-- Objective, timestamped load history
-- Early detection of protective limping
-- Progress tracking across rehabilitation sessions
-- Remote monitoring via mobile app integration (planned)
-
----
-
-*Built for MIT GrandHack26*
+| Layer | Technology |
+|---|---|
+| Pressure sensing | 5-sensor FSR insole (U1, U2, M1, L1, L2) |
+| Gait analysis AI | Claude (Anthropic) |
+| Clinical data standard | FHIR R4 |
+| Database / vector search | InterSystems IRIS |
+| Dashboard | Flask + vanilla JS |
+| Visualization | Matplotlib, RBF interpolation |
