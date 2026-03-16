@@ -1,0 +1,22 @@
+{
+  "patient_ref": "Patient/1",
+  "device_ref": "Device/1",
+  "observation_refs": [
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1",
+    "Observation/1"
+  ],
+  "report_ref": "DiagnosticReport/1",
+  "patient_id": "1"
+}

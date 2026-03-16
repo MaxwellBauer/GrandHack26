@@ -33,7 +33,7 @@
   .status-label { font-size: 12px; color: var(--muted); }
 
   main { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 16px; margin-bottom: 16px; align-items: stretch; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; animation: fadeIn 0.4s ease; }
@@ -155,14 +155,16 @@
 
     <div class="card">
       <div class="card-title">Patient</div>
-      <div class="patient-name">Jane Smith</div>
-      <div class="patient-sub">58 F &nbsp;·&nbsp; 82 kg &nbsp;·&nbsp; Day 14 post-op</div>
-      <div class="info-row"><span class="info-label">Condition</span><span>Tibial plateau fracture (R)</span></div>
-      <div class="info-row"><span class="info-label">Surgery</span><span>ORIF locking plate</span></div>
-      <div class="info-row"><span class="info-label">WB Restriction</span><span>Toe-touch (max 20% BW)</span></div>
-      <div class="info-row"><span class="info-label">Max allowed force</span><span>≈ 164 N</span></div>
-      <div class="info-row"><span class="info-label">FHIR Patient ID</span><span id="patient-fhir-id" style="color:var(--muted)">—</span></div>
-      <div><span class="wb-badge">⚠ Weight-Bearing Restricted</span></div>
+      <div id="patient-card-body">
+        <div class="patient-name">Jane Smith</div>
+        <div class="patient-sub">58 F &nbsp;·&nbsp; 82 kg &nbsp;·&nbsp; Day 14 post-op</div>
+        <div class="info-row"><span class="info-label">Condition</span><span>Tibial plateau fracture (R)</span></div>
+        <div class="info-row"><span class="info-label">Surgery</span><span>ORIF locking plate</span></div>
+        <div class="info-row"><span class="info-label">WB Restriction</span><span>Toe-touch (max 20% BW)</span></div>
+        <div class="info-row"><span class="info-label">Max allowed force</span><span>≈ 164 N</span></div>
+        <div class="info-row"><span class="info-label">FHIR Patient ID</span><span id="patient-fhir-id" style="color:var(--muted)">—</span></div>
+        <div><span class="wb-badge">⚠ Weight-Bearing Restricted</span></div>
+      </div>
     </div>
 
     <div class="card">
@@ -203,14 +205,16 @@
               <div class="force-bar-label" style="color:var(--left)">Left foot</div>
               <div class="force-bar-track"><div class="force-bar-fill" id="bar-left" style="width:0%;background:var(--left)"></div></div>
               <div style="font-size:11px;color:var(--left);margin-top:3px;" id="val-left">—</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:1px;" id="pct-left">—</div>
             </div>
             <div class="force-bar-wrap">
               <div class="force-bar-label" style="color:var(--right)">Right foot</div>
               <div class="force-bar-track"><div class="force-bar-fill" id="bar-right" style="width:0%;background:var(--right)"></div></div>
               <div style="font-size:11px;color:var(--right);margin-top:3px;" id="val-right">—</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:1px;" id="pct-right">—</div>
             </div>
           </div>
-          <div style="font-size:10px;color:var(--danger);margin-top:6px;" id="wb-warning"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--danger);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="wb-warning"></div>
         </div>
       </div>
     </div>
@@ -224,7 +228,7 @@
         <div class="skel-line skeleton" style="width:95%"></div>
         <div class="skel-line skeleton" style="width:70%"></div>
       </div>
-      <div id="ai-content" style="display:none">
+      <div id="ai-content" style="display:none;max-height:520px;overflow-y:auto;padding-right:4px">
         <div id="priority-badge" class="priority-badge"></div>
         <p class="clinical-summary" id="ai-summary"></p>
         <div class="section-label">Risk Flags</div>
@@ -245,24 +249,26 @@
 
     <div class="card img-card">
       <div class="card-title">Plantar Pressure Distribution</div>
-      <img src="/images/heatmap.png" alt="Heatmap"
-           onerror="this.style.display='none';document.getElementById('heatmap-ph').style.display='flex'">
+      <img id="heatmap-img" src="/images/heatmap.png" alt="Heatmap"
+           onerror="this.style.display='none';document.getElementById('heatmap-ph').style.display='flex'"
+           onload="this.style.display='block';document.getElementById('heatmap-ph').style.display='none'">
       <div id="heatmap-ph" class="img-placeholder" style="display:none">
         <span style="font-size:28px">🦶</span>
-        <span style="color:var(--muted)">Generating on first run…</span>
+        <span id="heatmap-ph-text" style="color:var(--muted)">Generating on first run…</span>
       </div>
-      <div class="img-caption">30-second time average · RBF interpolation · turbo colormap</div>
+      <div class="img-caption" id="heatmap-caption">30-second time average · RBF interpolation · turbo colormap</div>
     </div>
 
     <div class="card img-card">
       <div class="card-title">Gait Analysis Dashboard</div>
-      <img src="/images/gait_analysis.png" alt="Gait Analysis"
-           onerror="this.style.display='none';document.getElementById('gait-ph').style.display='flex'">
+      <img id="gait-img" src="/images/gait_analysis.png" alt="Gait Analysis"
+           onerror="this.style.display='none';document.getElementById('gait-ph').style.display='flex'"
+           onload="this.style.display='block';document.getElementById('gait-ph').style.display='none'">
       <div id="gait-ph" class="img-placeholder" style="display:none">
         <span style="font-size:28px">📈</span>
-        <span style="color:var(--muted)">Generating on first run…</span>
+        <span id="gait-ph-text" style="color:var(--muted)">Generating on first run…</span>
       </div>
-      <div class="img-caption">Force traces · step intervals · stance symmetry · limp detection</div>
+      <div class="img-caption" id="gait-caption">Force traces · step intervals · stance symmetry · limp detection</div>
     </div>
 
   </div>
@@ -388,6 +394,10 @@ function renderMetrics(m) {
   }, 200);
   document.getElementById('val-left').textContent  = m.avg_peak_force_left_N.toFixed(0)  + ' N avg';
   document.getElementById('val-right').textContent = m.avg_peak_force_right_N.toFixed(0) + ' N avg';
+
+  const bwDefault = 82 * 9.81;
+  document.getElementById('pct-left').textContent  = (m.max_force_left_N  / bwDefault * 100).toFixed(0) + '% BW (peak)';
+  document.getElementById('pct-right').textContent = (m.max_force_right_N / bwDefault * 100).toFixed(0) + '% BW (peak)';
 
   if (m.max_force_right_N > 164) {
     document.getElementById('wb-warning').textContent =
@@ -516,12 +526,171 @@ function renderPatientTable(patients) {
       const isOpen = detailRow.classList.contains('open');
       document.querySelectorAll('.pt-row.selected').forEach(r => r.classList.remove('selected'));
       document.querySelectorAll('.pt-detail-row.open').forEach(r => r.classList.remove('open'));
-      if (!isOpen) { row.classList.add('selected'); detailRow.classList.add('open'); }
+      if (!isOpen) {
+        row.classList.add('selected');
+        detailRow.classList.add('open');
+        loadPatient(p.patient_id);
+      }
     });
 
     tbody.appendChild(row);
     tbody.appendChild(detailRow);
   });
+}
+
+// ── Per-patient loading (patient browser click) ───────────────────────────────
+
+async function loadPatient(patient_id) {
+  // Show loading state in top cards
+  document.getElementById('metrics-loading').style.display = 'block';
+  document.getElementById('metrics-content').style.display = 'none';
+  document.getElementById('ai-loading').style.display = 'block';
+  document.getElementById('ai-content').style.display = 'none';
+  document.getElementById('ai-empty').style.display = 'none';
+
+  try {
+    const r = await fetch(`/api/patient/${encodeURIComponent(patient_id)}`);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    renderPatientFromDB(data);
+    renderMetricsFromDB(data);
+    renderAIFromDB(data);
+    updateViz(patient_id);
+  } catch(e) {
+    console.error('Failed to load patient:', e);
+    document.getElementById('metrics-loading').style.display = 'none';
+    document.getElementById('ai-loading').style.display = 'none';
+  }
+}
+
+function renderPatientFromDB(data) {
+  const pri = (data.follow_up_priority || 'routine').toLowerCase();
+  const priLabel = {urgent:'🔴 Urgent', soon:'🟠 Soon', routine:'🟢 Routine'}[pri] || pri;
+  const wbWarning = (parseFloat(data.max_force_left||0) > 164 || parseFloat(data.max_force_right||0) > 164)
+    ? '<div><span class="wb-badge">⚠ Weight-Bearing Restricted</span></div>' : '';
+  const dateStr = data.recording_date ? data.recording_date.slice(0, 10) : '—';
+
+  document.getElementById('patient-card-body').innerHTML = `
+    <div class="patient-name">${data.patient_id}</div>
+    <div class="patient-sub">${data.recovery_stage || '—'} &nbsp;·&nbsp; ${dateStr}</div>
+    <div class="info-row"><span class="info-label">Symmetry Status</span><span>${data.symmetry_status || '—'}</span></div>
+    <div class="info-row"><span class="info-label">Recovery Stage</span><span>${data.recovery_stage || '—'}</span></div>
+    <div class="info-row"><span class="info-label">Follow-up Priority</span><span>${priLabel}</span></div>
+    <div class="info-row"><span class="info-label">Recording Date</span><span style="color:var(--muted)">${dateStr}</span></div>
+    <div class="info-row"><span class="info-label">FHIR Patient ID</span><span id="patient-fhir-id" style="color:var(--muted)">${data.fhir_patient_ref || '—'}</span></div>
+    ${wbWarning}`;
+}
+
+function renderMetricsFromDB(data) {
+  document.getElementById('metrics-loading').style.display = 'none';
+  document.getElementById('metrics-content').style.display = 'block';
+
+  const cadence = parseFloat(data.cadence || 0);
+  document.getElementById('m-cadence').textContent = cadence.toFixed(0);
+
+  const fsi = parseFloat(data.force_symmetry_pct || 0);
+  document.getElementById('m-fsi').textContent = fsi.toFixed(1) + '%';
+  const fb = document.getElementById('m-fsi-badge');
+  if (fsi < 10)      { fb.textContent='NORMAL';  fb.className='badge badge-ok'; }
+  else if (fsi < 15) { fb.textContent='MILD';    fb.className='badge badge-warn'; }
+  else               { fb.textContent='FLAGGED'; fb.className='badge badge-danger'; }
+
+  // Timing SI — derive from force symmetry as proxy (not raw-data precise)
+  const tsiEst = Math.max(0, 100 - parseFloat(data.force_symmetry_pct || 0) * 0.6).toFixed(1);
+  document.getElementById('m-tsi').textContent = tsiEst + '%';
+  const tb = document.getElementById('m-tsi-badge');
+  const tsiNum = parseFloat(tsiEst);
+  if (tsiNum < 10)      { tb.textContent = 'NORMAL';  tb.className = 'badge badge-ok'; }
+  else if (tsiNum < 20) { tb.textContent = 'MILD';    tb.className = 'badge badge-warn'; }
+  else                  { tb.textContent = 'FLAGGED'; tb.className = 'badge badge-danger'; }
+
+  // Stride counts — estimated from cadence over 30s recording
+  const stridesEst = Math.round(cadence / 2 * (30 / 60));
+  document.getElementById('m-strides-l').textContent = stridesEst || '—';
+  document.getElementById('m-strides-r').textContent = stridesEst || '—';
+
+  const maxL = parseFloat(data.max_force_left || 0);
+  const maxR = parseFloat(data.max_force_right || 0);
+  // Reset bars first so animation fires
+  document.getElementById('bar-left').style.width  = '0%';
+  document.getElementById('bar-right').style.width = '0%';
+  setTimeout(() => {
+    document.getElementById('bar-left').style.width  = Math.min((maxL / 500) * 100, 100) + '%';
+    document.getElementById('bar-right').style.width = Math.min((maxR / 500) * 100, 100) + '%';
+  }, 50);
+  document.getElementById('val-left').textContent  = maxL.toFixed(0) + ' N peak';
+  document.getElementById('val-right').textContent = maxR.toFixed(0) + ' N peak';
+
+  // Injured side = lower-loading foot
+  const injuredForce = Math.min(maxL, maxR);
+  const injuredSide  = maxL <= maxR ? 'left' : 'right';
+  const isLeftInjured = maxL <= maxR;
+
+  // % BW — dominant foot calibrated to 102% in current model
+  const bwEst  = Math.max(maxL, maxR) / 1.02;
+  const pctL   = (maxL / bwEst * 100).toFixed(0);
+  const pctR   = (maxR / bwEst * 100).toFixed(0);
+  const injuredColor = injuredForce > 164 ? 'var(--danger)' : injuredForce > 100 ? 'var(--warn)' : 'var(--muted)';
+  document.getElementById('pct-left').style.color  = isLeftInjured  ? injuredColor : 'var(--muted)';
+  document.getElementById('pct-right').style.color = !isLeftInjured ? injuredColor : 'var(--muted)';
+  document.getElementById('pct-left').textContent  = pctL + '% BW' + (isLeftInjured  ? ' ⚠' : '');
+  document.getElementById('pct-right').textContent = pctR + '% BW' + (!isLeftInjured ? ' ⚠' : '');
+
+  const wbEl = document.getElementById('wb-warning');
+  wbEl.textContent = injuredForce > 164
+    ? `⚠ Peak ${injuredSide} (injured): ${injuredForce.toFixed(0)} N — ${((injuredForce/164-1)*100).toFixed(0)}% over limit (164 N)` : '';
+}
+
+function renderAIFromDB(data) {
+  document.getElementById('ai-loading').style.display = 'none';
+  document.getElementById('ai-content').style.display = 'block';
+
+  const pri = (data.follow_up_priority || 'routine').toLowerCase();
+  const badge = document.getElementById('priority-badge');
+  const labels  = {urgent:'🔴 URGENT FOLLOW-UP', soon:'🟠 FOLLOW UP SOON', routine:'🟢 ROUTINE'};
+  const classes = {urgent:'priority-urgent', soon:'priority-soon', routine:'priority-routine'};
+  badge.textContent = labels[pri] || pri.toUpperCase();
+  badge.className   = 'priority-badge ' + (classes[pri] || 'priority-routine');
+
+  document.getElementById('ai-summary').textContent = data.clinical_summary || '';
+
+  // Parse risk flags and recommendations from full_narrative
+  const narrative = data.full_narrative || '';
+  const flags = (narrative.match(/Risk: ((?:(?!Risk: |Recommendation: ).)+)/g) || []).map(s => s.slice(6).replace(/\s+$/, '').replace(/\.$/, '').trim());
+  const recs  = (narrative.match(/Recommendation: ((?:(?!Risk: |Recommendation: ).)+)/g) || []).map(s => s.slice(16).replace(/\s+$/, '').replace(/\.$/, '').trim());
+
+  const flagsEl = document.getElementById('ai-flags');
+  flagsEl.innerHTML = '';
+  flags.forEach(f => { const li = document.createElement('li'); li.textContent = f; flagsEl.appendChild(li); });
+
+  const recsEl = document.getElementById('ai-recs');
+  recsEl.innerHTML = '';
+  recs.forEach(r => { const li = document.createElement('li'); li.textContent = r; recsEl.appendChild(li); });
+}
+
+function updateViz(patient_id) {
+  // Show placeholders with "Generating…" while images load
+  const heatmapImg = document.getElementById('heatmap-img');
+  const gaitImg    = document.getElementById('gait-img');
+  const heatmapPh  = document.getElementById('heatmap-ph');
+  const gaitPh     = document.getElementById('gait-ph');
+
+  heatmapImg.style.display = 'none';
+  gaitImg.style.display    = 'none';
+  heatmapPh.style.display  = 'flex';
+  gaitPh.style.display     = 'flex';
+  document.getElementById('heatmap-ph-text').textContent = `Generating plot for ${patient_id}…`;
+  document.getElementById('gait-ph-text').textContent    = `Generating plot for ${patient_id}…`;
+
+  // Cache-bust so browser doesn't reuse previous patient's image
+  const ts = Date.now();
+  heatmapImg.src = `/api/patient/${encodeURIComponent(patient_id)}/viz/heatmap.png?t=${ts}`;
+  gaitImg.src    = `/api/patient/${encodeURIComponent(patient_id)}/viz/gait_analysis.png?t=${ts}`;
+
+  document.getElementById('heatmap-caption').textContent =
+    `${patient_id} · 30-second time average · RBF interpolation · turbo colormap`;
+  document.getElementById('gait-caption').textContent =
+    `${patient_id} · Force traces · step intervals · stance symmetry · limp detection`;
 }
 
 function quickSearch(q) {

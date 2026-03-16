@@ -96,9 +96,10 @@ def generate_gait_csv(
         clip = end - start_idx
         ts = np.linspace(0, 1, n_stance)
 
-        heel_pk = body_weight_N * 0.40 * load
-        mid_pk  = body_weight_N * 0.09 * load
-        toe_pk  = body_weight_N * 0.51 * load * toe_b
+        # Scale so peak instantaneous total ≈ BW * load at both heel and push-off phases
+        heel_pk = body_weight_N * 0.80 * load
+        mid_pk  = body_weight_N * 0.18 * load
+        toe_pk  = body_weight_N * 1.02 * load * toe_b
 
         waves = {
             f"{prefix}_heel_l_N": heel_pk * 0.50 * _gaussian(ts, 0.20, 0.18),

@@ -181,10 +181,87 @@ def serve_image(filename):
     return send_from_directory(VIZ_DIR, filename)
 
 
+@app.route("/api/patient/<patient_id>/viz/<img_type>.png")
+def patient_viz(patient_id, img_type):
+    """Generate (and cache) a per-patient visualization PNG from stored metrics."""
+    if img_type not in ("heatmap", "gait_analysis"):
+        return "Not found", 404
+
+    import re, tempfile
+    safe_id = re.sub(r"[^a-zA-Z0-9_-]", "_", patient_id)
+    cache_path = os.path.join(VIZ_DIR, f"{safe_id}_{img_type}.png")
+
+    if os.path.exists(cache_path):
+        return send_from_directory(VIZ_DIR, f"{safe_id}_{img_type}.png")
+
+    # Fetch stored metrics for this patient
+    try:
+        from vector_search import GaitVectorStore
+        store = GaitVectorStore(**IRIS_CONFIG)
+        data = store.get_patient_analysis(patient_id)
+        store.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+    if not data:
+        return "Patient not found", 404
+
+    # Derive CSV generation params from stored summary metrics
+    cadence     = float(data.get("cadence", 100))
+    cadence_hz  = max(0.4, min(cadence / 120.0, 2.0))   # steps/min → stride Hz
+    max_L       = float(data.get("max_force_left",  350))
+    max_R       = float(data.get("max_force_right", 350))
+    bw          = 700.0
+    # The stamp function peaks at ~0.51*bw*load_factor (toe-dominated phase),
+    # so calibrate: load_factor = stored_peak / (0.51 * bw)
+    # This ensures the generated CSV reproduces forces matching the stored values.
+    MODEL_PEAK_FRACTION = 1.02
+    left_load   = max(0.1, max_L / (MODEL_PEAK_FRACTION * bw))
+    right_load  = max(0.1, max_R / (MODEL_PEAK_FRACTION * bw))
+    seed        = abs(hash(patient_id)) % (2 ** 31)
+
+    try:
+        sys.path.insert(0, BASE_DIR)
+        from seed_patients import generate_gait_csv
+
+        import matplotlib
+        matplotlib.use("Agg")
+        os.makedirs(VIZ_DIR, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            csv_path = f.name
+
+        try:
+            generate_gait_csv(
+                csv_path,
+                body_weight_N=bw,
+                cadence_hz=cadence_hz,
+                left_load_factor=left_load,
+                right_load_factor=right_load,
+                seed=seed,
+            )
+            sys.path.insert(0, ANALYSIS_DIR)
+            if img_type == "heatmap":
+                from heatmap_viz import render as render_heatmap
+                render_heatmap(csv_path, cache_path, body_weight_N=bw,
+                               peak_force_left_N=max_L, peak_force_right_N=max_R)
+            else:
+                from gait_viz import render as render_gait
+                render_gait(csv_path, cache_path)
+        finally:
+            if os.path.exists(csv_path):
+                os.unlink(csv_path)
+
+        return send_from_directory(VIZ_DIR, f"{safe_id}_{img_type}.png")
+    except Exception as e:
+        print(f"  ⚠ viz generation failed for {patient_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     print("=" * 55)
     print("  Smart Insole Gait Intelligence Dashboard")
     print("  http://localhost:5050")
     print("=" * 55)
     ensure_visualizations()
-    app.run(host="0.0.0.0", port=5050, debug=False)
+    app.run(host="0.0.0.0", port=5050, debug=False, threaded=True)
