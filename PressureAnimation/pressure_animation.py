@@ -251,7 +251,7 @@ def make_animation(sensor_data, timestamps, pressures,
 
     # ── Title panel ────────────────────────────────────────────────────────
     ax_title.axis('off')
-    title_txt = ax_title.text(0.5, 0.65, 'Plantar Pressure — Left Foot',
+    title_txt = ax_title.text(0.5, 0.65, 'Plantar Pressure — Right Foot',
                               ha='center', va='center', fontsize=18,
                               fontweight='bold', color=FG,
                               transform=ax_title.transAxes)
