@@ -251,7 +251,7 @@ def make_animation(sensor_data, timestamps, pressures,
 
     # ── Title panel ────────────────────────────────────────────────────────
     ax_title.axis('off')
-    title_txt = ax_title.text(0.5, 0.65, 'Plantar Pressure — Right Foot',
+    title_txt = ax_title.text(0.5, 0.65, 'Plantar Pressure - Right Foot - Partial Bearing',
                               ha='center', va='center', fontsize=18,
                               fontweight='bold', color=FG,
                               transform=ax_title.transAxes)
@@ -262,7 +262,7 @@ def make_animation(sensor_data, timestamps, pressures,
     # ── Total-force bar (% of global peak, with tolerance zones) ──────────
     ax_bar.set_facecolor(BG)
     ax_bar.set_xlim(0, 100)
-    ax_bar.set_ylim(-0.8, 1.6)
+    ax_bar.set_ylim(-1.8, 1.2)
     ax_bar.axis('off')
 
     LOW, HIGH = low_pct, high_pct   # tolerance thresholds in %
@@ -290,8 +290,8 @@ def make_animation(sensor_data, timestamps, pressures,
 
     # Dynamic bar (starts at 0)
     bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.7, left=0, zorder=3)
-    bar_label = ax_bar.text(50, 1.1, '0%',
-                            ha='center', va='center', fontsize=14,
+    bar_label = ax_bar.text(50, -1.35, '0%',
+                            ha='center', va='center', fontsize=22,
                             fontweight='bold', color=FG)
 
     # ── Initial heatmap (RGBA imshow — reliable for animation) ────────────
