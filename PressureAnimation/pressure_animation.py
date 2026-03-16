@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.path as mpath
 import matplotlib.ticker
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, LinearSegmentedColormap
 from matplotlib.cm import ScalarMappable
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import RBFInterpolator, splprep, splev
@@ -90,6 +90,17 @@ FG  = '#222222'   # primary text
 FG2 = '#666666'   # secondary text
 
 
+def make_cmap(cmap_end=1.0):
+    """Return turbo truncated to [0, cmap_end] — e.g. 0.45 ends at green."""
+    base = plt.get_cmap('turbo')
+    if cmap_end >= 1.0:
+        return base
+    return LinearSegmentedColormap.from_list(
+        f'turbo_trunc_{cmap_end:.2f}',
+        base(np.linspace(0.0, cmap_end, 256))
+    )
+
+
 # ── Geometry helpers ──────────────────────────────────────────────────────────
 
 def smooth_outline(ctrl, n=600):
@@ -110,7 +121,7 @@ def rbf_field(sensor_pts, sensor_vals, boundary_pts, gx, gy):
     bv   = np.zeros(len(boundary_pts))
     pts  = np.vstack([sensor_pts, boundary_pts])
     vals = np.concatenate([sensor_vals, bv])
-    rbf  = RBFInterpolator(pts, vals, kernel='thin_plate_spline', smoothing=0.5)
+    rbf  = RBFInterpolator(pts, vals, kernel='thin_plate_spline', smoothing=0)
     grid = np.column_stack([gx.ravel(), gy.ravel()])
     return np.clip(rbf(grid).reshape(gx.shape), 0, None)
 
@@ -193,11 +204,12 @@ def build_pressure_frames(sensor_data, bases, smooth=3):
 
 def make_animation(sensor_data, timestamps, pressures,
                    outline, gx, gy, mask, vmax, fps, output_path,
-                   peak_total, low_pct=15.0, high_pct=75.0):
+                   peak_total, low_pct=15.0, high_pct=75.0, cmap=None):
 
     n_frames = len(pressures)
     sensor_pts = np.array([SENSOR_POS[k] for k in SENSOR_KEYS])
-    cmap = plt.get_cmap('turbo')
+    if cmap is None:
+        cmap = plt.get_cmap('turbo')
     norm = Normalize(vmin=0, vmax=vmax)
 
     # ── Figure layout ──────────────────────────────────────────────────────
@@ -262,7 +274,7 @@ def make_animation(sensor_data, timestamps, pressures,
     # ── Total-force bar (% of global peak, with tolerance zones) ──────────
     ax_bar.set_facecolor(BG)
     ax_bar.set_xlim(0, 100)
-    ax_bar.set_ylim(-2.1, 1.2)
+    ax_bar.set_ylim(-2.8, 1.2)
     ax_bar.axis('off')
 
     LOW, HIGH = low_pct, high_pct   # tolerance thresholds in %
@@ -274,9 +286,10 @@ def make_animation(sensor_data, timestamps, pressures,
     ax_bar.barh([0], [HIGH - LOW], color='#c8e6c9', height=0.7,
                 left=LOW, zorder=2, alpha=0.8)
 
-    # Fixed tolerance lines + offset labels so they don't overlap the line
-    ax_bar.axvline(LOW,  color='#4fc3f7', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
-    ax_bar.axvline(HIGH, color='#ff6b6b', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
+    # Fixed tolerance lines (clipped to bar height) + offset labels
+    bar_h = 0.35   # half-height of the bar (height=0.7)
+    ax_bar.plot([LOW,  LOW],  [-bar_h, bar_h], color='#4fc3f7', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
+    ax_bar.plot([HIGH, HIGH], [-bar_h, bar_h], color='#ff6b6b', linewidth=1.5, linestyle='--', alpha=0.85, zorder=5)
     ax_bar.text(LOW  + 1.5, 0.42, f'MIN {LOW:.0f}%',  ha='left',  va='bottom', fontsize=10,
                 color='#4fc3f7', fontweight='bold')
     ax_bar.text(HIGH + 1.5, 0.42, f'MAX {HIGH:.0f}%', ha='left',  va='bottom', fontsize=10,
@@ -290,7 +303,7 @@ def make_animation(sensor_data, timestamps, pressures,
 
     # Dynamic bar (starts at 0)
     bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.7, left=0, zorder=3)
-    bar_label = ax_bar.text(50, -1.60, '0%',
+    bar_label = ax_bar.text(50, -2.35, '0%',
                             ha='center', va='center', fontsize=22,
                             fontweight='bold', color=FG)
 
@@ -417,6 +430,8 @@ def main():
                         help="Upper tolerance threshold as %% of body weight (default: 40)")
     parser.add_argument("--bodyweight", type=float, default=140.0,
                         help="Patient body weight in lbs used for %% normalization (default: 140)")
+    parser.add_argument("--cmap-end",   type=float, default=1.0,
+                        help="Truncate turbo colormap at this fraction (default: 1.0=full; 0.45=ends at green)")
     args = parser.parse_args()
 
     csv_path    = args.csv
@@ -455,19 +470,21 @@ def main():
     print("\nComputing pressure fields…")
     pressures = build_pressure_frames(sensor_data, bases, smooth=args.smooth)
 
-    # Colormap range — derived from actual interpolated field, not raw sensors,
-    # so the full turbo range (blue→red) maps to the real displayed values
+    # Colormap range — use max individual sensor reading so the colorbar
+    # reflects real sensor values (~24-30 kg), and with smoothing=0 the
+    # RBF field passes through sensor points exactly, reaching full red
     vmax = args.vmax
     if vmax is None:
-        vmax = max(float(pressures.max()) * 1.02, 1.0)
-    print(f"  Colormap vmax: {vmax/1000:.1f} kg (field peak)")
+        vmax = max(float(sensor_data.max()), 1.0)
+    print(f"  Colormap vmax: {vmax/1000:.1f} kg (sensor max)")
 
     # Animate + save
     print("\nAnimating…")
+    cmap = make_cmap(args.cmap_end)
     make_animation(sensor_data, timestamps, pressures,
                    outline, gx, gy, mask, vmax, args.fps, output_path,
                    peak_total=peak_total,
-                   low_pct=args.low, high_pct=args.high)
+                   low_pct=args.low, high_pct=args.high, cmap=cmap)
 
     print(f"\n{'═'*54}")
     print(f"  MP4 saved → {output_path}")
