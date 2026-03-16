@@ -262,7 +262,7 @@ def make_animation(sensor_data, timestamps, pressures,
     # ── Total-force bar (% of global peak, with tolerance zones) ──────────
     ax_bar.set_facecolor(BG)
     ax_bar.set_xlim(0, 100)
-    ax_bar.set_ylim(-1.8, 1.2)
+    ax_bar.set_ylim(-2.1, 1.2)
     ax_bar.axis('off')
 
     LOW, HIGH = low_pct, high_pct   # tolerance thresholds in %
@@ -290,7 +290,7 @@ def make_animation(sensor_data, timestamps, pressures,
 
     # Dynamic bar (starts at 0)
     bar_fill = ax_bar.barh([0], [0], color='#4fc3f7', height=0.7, left=0, zorder=3)
-    bar_label = ax_bar.text(50, -1.35, '0%',
+    bar_label = ax_bar.text(50, -1.60, '0%',
                             ha='center', va='center', fontsize=22,
                             fontweight='bold', color=FG)
 
@@ -447,13 +447,6 @@ def main():
     timestamps  = timestamps_full[mask_t]
     print(f"  Cropped to {len(sensor_data)} frames ({lo/1000:.1f}s – {hi/1000:.1f}s)")
 
-    # Colormap range
-    vmax = args.vmax
-    if vmax is None:
-        p99  = np.percentile(sensor_data, 99)
-        vmax = max(p99 * 1.05, 1.0)
-    print(f"  Colormap vmax: {vmax:.0f} g")
-
     # Geometry + RBF basis
     print("\nBuilding heatmap geometry…")
     outline, gx, gy, mask, bases = precompute(res=args.res)
@@ -461,6 +454,13 @@ def main():
     # Pressure frames
     print("\nComputing pressure fields…")
     pressures = build_pressure_frames(sensor_data, bases, smooth=args.smooth)
+
+    # Colormap range — derived from actual interpolated field, not raw sensors,
+    # so the full turbo range (blue→red) maps to the real displayed values
+    vmax = args.vmax
+    if vmax is None:
+        vmax = max(float(pressures.max()) * 1.02, 1.0)
+    print(f"  Colormap vmax: {vmax/1000:.1f} kg (field peak)")
 
     # Animate + save
     print("\nAnimating…")
