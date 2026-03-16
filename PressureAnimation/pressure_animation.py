@@ -36,6 +36,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.path as mpath
+import matplotlib.ticker
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.gridspec import GridSpec
@@ -242,9 +243,11 @@ def make_animation(sensor_data, timestamps, pressures,
     sm.set_array([])
     cbar_ax = ax_foot.inset_axes([1.03, 0.12, 0.04, 0.76])
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation='vertical')
-    cbar.set_label('Pressure (g)', color=FG, fontsize=12, labelpad=8)
+    cbar.set_label('Pressure (kg)', color=FG, fontsize=12, labelpad=8)
     cbar.ax.yaxis.set_tick_params(color=FG2, labelcolor=FG, labelsize=10)
     cbar.outline.set_edgecolor('#cccccc')
+    cbar.formatter = matplotlib.ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}')
+    cbar.update_ticks()
 
     # ── Title panel ────────────────────────────────────────────────────────
     ax_title.axis('off')
@@ -315,7 +318,7 @@ def make_animation(sensor_data, timestamps, pressures,
         px, py = sensor_pts[i]
         dot, = ax_foot.plot(px, py, 'o', color='white', markersize=8,
                             markeredgecolor='#333', markeredgewidth=1.0, zorder=7)
-        txt = ax_foot.text(px, py + 0.10, '0 g',
+        txt = ax_foot.text(px, py + 0.10, '0 kg',
                            ha='center', va='bottom', fontsize=10,
                            color=FG, fontweight='bold', zorder=8,
                            bbox=dict(boxstyle='round,pad=0.15',
@@ -335,7 +338,7 @@ def make_animation(sensor_data, timestamps, pressures,
 
         # Sensor value labels
         for i, key in enumerate(SENSOR_KEYS):
-            val_artists[i].set_text(f'{vals[i]:.0f} g')
+            val_artists[i].set_text(f'{vals[i]/1000:.1f} kg')
 
         # Time label
         t_sec = t_ms / 1000.0
