@@ -73,10 +73,10 @@ FOOT_CTRL = np.array([
 #   foot_y = (1 - y_norm) * 2.30 - 0.02
 SENSOR_KEYS = ['U1', 'M1', 'L1', 'L2']
 SENSOR_POS = {
-    'U1': np.array([0.40, 1.868]),   # Medial forefoot
-    'M1': np.array([0.55, 1.176]),   # Midfoot / arch
-    'L1': np.array([0.42, 0.486]),   # Medial heel
-    'L2': np.array([0.58, 0.438]),   # Lateral heel
+    'U1': np.array([0.30, 1.72]),    # Medial forefoot
+    'M1': np.array([0.30, 0.98]),    # Midfoot / arch (medial side)
+    'L1': np.array([0.42, 0.28]),    # Medial heel
+    'L2': np.array([0.58, 0.23]),    # Lateral heel
 }
 SENSOR_LABELS = {
     'U1': 'Medial\nForefoot',
@@ -255,7 +255,7 @@ def make_animation(sensor_data, timestamps, pressures,
     sm.set_array([])
     cbar_ax = ax_foot.inset_axes([1.03, 0.12, 0.04, 0.76])
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation='vertical')
-    cbar.set_label('Pressure (kg)', color=FG, fontsize=12, labelpad=8)
+    cbar.set_label('Load (kg)', color=FG, fontsize=12, labelpad=8)
     cbar.ax.yaxis.set_tick_params(color=FG2, labelcolor=FG, labelsize=10)
     cbar.outline.set_edgecolor('#cccccc')
     cbar.formatter = matplotlib.ticker.FuncFormatter(lambda x, _: f'{x/1000:.1f}')
